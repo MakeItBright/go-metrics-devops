@@ -8,3 +8,13 @@ help: Makefile
 ## run: Run LocalServer application
 run:
 	@CGO_ENABLED=0 go run ./cmd/server/main.go .
+
+## build: Build  application
+buildserver:
+	@mkdir -p ./build
+	@CGO_ENABLED=0 go build -o ./build/server  ./cmd/server/main.go
+
+## build: Build  application
+buildagent:
+	@mkdir -p ./build
+	@CGO_ENABLED=0 go build -o ./build/agent  ./cmd/agent/main.go
