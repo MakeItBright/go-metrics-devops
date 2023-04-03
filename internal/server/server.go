@@ -42,11 +42,21 @@ func (s *server) configureRouter() {
 }
 
 func (s *server) handlePostUpdateMetric() http.HandlerFunc {
+
+	// type request struct {
+	// 	Name  string // имя метрики
+	// 	MType string // параметр, принимающий значение gauge или counter
+	// }
+
 	return func(w http.ResponseWriter, r *http.Request) {
+		// req := &request{}
+		s.logger.Info(r.Body)
+
 		s.logger.Info("HandlePostUpdateMetric")
 
 		w.Header().Add("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
+		//ttp.StatusNotFound
 	}
 }
 
