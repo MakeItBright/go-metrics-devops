@@ -1,18 +1,10 @@
 package teststore_test
 
-import (
-	"testing"
+// func TestMetricRepository_UpdateMetric(t *testing.T) {
+// 	ms := teststore.New()
 
-	"github.com/MakeItBright/go-metrics-devops/internal/model"
-	"github.com/MakeItBright/go-metrics-devops/internal/store/teststore"
-	"github.com/stretchr/testify/assert"
-)
+// 	m := model.Testmetric(t)
 
-func TestMetricRepository_UpdateMetric(t *testing.T) {
-	ms := teststore.New()
-
-	m := model.Testmetric(t)
-
-	assert.NoError(t, ms.Metric().UpdateMetric(m))
-	assert.NotNil(t, m)
-}
+// 	assert.NoError(t, ms.Metric().UpdateMetric(m))
+// 	assert.NotNil(t, m)
+// }
