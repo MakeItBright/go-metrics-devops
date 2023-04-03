@@ -5,5 +5,7 @@ import (
 )
 
 type MetricRepository interface {
-	Save(*model.Metric) error
+	UpdateMetric(*model.Metric) error
+	// SaveGauge(name string, value int64) error
+	// SaveCounter ()
 }

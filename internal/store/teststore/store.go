@@ -21,8 +21,12 @@ func (s *Store) Metric() store.MetricRepository {
 		return s.metricRepository
 	}
 	s.metricRepository = &MetricRepository{
-		metrics: make(map[string]*model.Metric),
+		metrics:    make(map[string]*model.Metric),
+		gaugeMap:   GaugeMap(make(map[string]Gauge)),
+		counterMap: CounterMap(make(map[string]Counter)),
 	}
 
 	return s.metricRepository
 }
+
+// s.Metric().Save()
