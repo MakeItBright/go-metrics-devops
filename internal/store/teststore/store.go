@@ -1,7 +1,6 @@
 package teststore
 
 import (
-	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/store"
 )
 
@@ -21,9 +20,8 @@ func (s *Store) Metric() store.MetricRepository {
 		return s.metricRepository
 	}
 	s.metricRepository = &MetricRepository{
-		metrics:    make(map[string]*model.Metric),
-		gaugeMap:   GaugeMap(make(map[string]Gauge)),
-		counterMap: CounterMap(make(map[string]Counter)),
+		gaugeMap:   GaugeMap(make(map[string]float64)),
+		counterMap: CounterMap(make(map[string]int64)),
 	}
 
 	return s.metricRepository

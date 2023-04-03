@@ -4,56 +4,56 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/MakeItBright/go-metrics-devops/internal/store"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
-// API server ...
-type Server struct {
-	config *Config
+// Server ...
+type server struct {
 	logger *logrus.Logger
 	router *mux.Router
+	store  store.Store
 }
 
 // New ...
-func New(config *Config) *Server {
-	return &Server{
-		config: config,
+func newServer(store store.Store) *server {
+	s := &server{
 		logger: logrus.New(),
 		router: mux.NewRouter(),
-	}
-}
-
-// Start ...
-func (s *Server) Start() error {
-	if err := s.configureLogger(); err != nil {
-		return err
+		store:  store,
 	}
 	s.configureRouter()
 
-	s.logger.Info("Starting server")
-	return http.ListenAndServe(s.config.BindAddr, s.router)
+	return s
 }
 
-// Config Logger ...
-func (s *Server) configureLogger() error {
-	level, err := logrus.ParseLevel(s.config.LogLevel)
-	if err != nil {
-		return err
-	}
-
-	s.logger.SetLevel(level)
-	return nil
+// ServeHTTP
+func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
 }
 
 // Config Router ...
-func (s *Server) configureRouter() {
+func (s *server) configureRouter() {
 	s.router.HandleFunc("/health", s.handleHealth())
+	/// update/counter/someMetric/527 HTTP/1.1
+	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("POST")
+
 }
 
-func (s *Server) handleHealth() http.HandlerFunc {
+func (s *server) handlePostUpdateMetric() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Info("HandlePostUpdateMetric")
+
+		w.Header().Add("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (s *server) handleHealth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.logger.Info("Test Health")
+
 		io.WriteString(w, "Test Health")
 	}
 }

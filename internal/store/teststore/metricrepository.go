@@ -1,18 +1,11 @@
 package teststore
 
-import (
-	"github.com/MakeItBright/go-metrics-devops/internal/model"
-)
-
-type Counter int64
-type Gauge float64
-type GaugeMap map[string]Gauge
-type CounterMap map[string]Counter
+type GaugeMap map[string]float64 // новое значение должно замещать предыдущее.
+type CounterMap map[string]int64 // новое значение должно добавляться к предыдущему, если какое-то значение уже было известно серверу.
 
 type MetricRepository struct {
 	gaugeMap   GaugeMap
 	counterMap CounterMap
-	metrics    map[string]*model.Metric
 }
 
 func (mr *MetricRepository) SaveCounterValue(name string, counter int64) {
@@ -28,6 +21,7 @@ func (mr *MetricRepository) GetGaugeValue(name string) (float64, error) {
 	return 0, nil
 }
 func (mr *MetricRepository) GetAllValues() string {
+
 	return ""
 }
 
