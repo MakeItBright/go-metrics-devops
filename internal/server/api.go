@@ -15,5 +15,3 @@ func Start(config *Config) error {
 
 	return http.ListenAndServe(config.BindAddr, srv)
 }
-
-func newDB() {}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -37,7 +38,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *server) configureRouter() {
 	s.router.HandleFunc("/health", s.handleHealth())
 	/// update/counter/someMetric/527 HTTP/1.1
-	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("POST")
+	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("GET", "POST")
 
 }
 
@@ -47,13 +48,41 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 	// 	Name  string // имя метрики
 	// 	MType string // параметр, принимающий значение gauge или counter
 	// }
-
+	type Metric struct {
+		MName string  // имя метрики
+		MType string  // параметр, принимающий значение gauge или counter
+		Delta int64   // значение метрики в случае передачи counter
+		Value float64 // значение метрики в случае передачи gauge
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		// req := &request{}
-		s.logger.Info(r.Body)
 
 		s.logger.Info("HandlePostUpdateMetric")
 
+		s.logger.Info(mux.Vars(r))
+		var metrics Metric
+		// Convert the map to JSON
+		jsonData, _ := json.Marshal(mux.Vars(r))
+		json.Unmarshal(jsonData, &metrics)
+
+		s.logger.Info(metrics)
+		s.logger.Info(metrics.MName)
+		s.logger.Info(metrics.MType)
+		s.logger.Info(metrics.Value)
+
+		switch metrics.MType {
+		case "Gauge":
+		case "Counter":
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// if err != nil {
+		// 	http.Error(w, err.Error(), 500)
+		// 	return
+		// }
+
+		// store.MetricRepository.SaveGaugeValue()
 		w.Header().Add("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		//ttp.StatusNotFound
