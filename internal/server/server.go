@@ -49,29 +49,39 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 	// 	MType string // параметр, принимающий значение gauge или counter
 	// }
 	type Metric struct {
-		MName string  // имя метрики
-		MType string  // параметр, принимающий значение gauge или counter
-		Delta int64   // значение метрики в случае передачи counter
-		Value float64 // значение метрики в случае передачи gauge
+		MName  string  // имя метрики
+		MType  string  // параметр, принимающий значение gauge или counter
+		Delta  int64   // значение метрики в случае передачи counter
+		MValue float64 // значение метрики в случае передачи gauge
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		s.logger.Info("HandlePostUpdateMetric")
-
 		s.logger.Info(mux.Vars(r))
+
 		var metrics Metric
 		// Convert the map to JSON
 		jsonData, _ := json.Marshal(mux.Vars(r))
-		json.Unmarshal(jsonData, &metrics)
+		err := json.Unmarshal(jsonData, &metrics)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		s.logger.Info(metrics)
 		s.logger.Info(metrics.MName)
 		s.logger.Info(metrics.MType)
-		s.logger.Info(metrics.Value)
+		s.logger.Info(metrics.MValue)
 
 		switch metrics.MType {
-		case "Gauge":
-		case "Counter":
+		case "gauge":
+			s.store.Metric().SaveGaugeValue(metrics.MName, metrics.MValue)
+			w.Header().Set("content-type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+			s.logger.Info("Save Gauge")
+		case "counter":
+
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -91,7 +101,6 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 
 func (s *server) handleHealth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.logger.Info("Test Health")
 
 		io.WriteString(w, "Test Health")
 	}
