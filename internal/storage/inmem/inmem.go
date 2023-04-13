@@ -21,7 +21,9 @@ type Store struct {
 }
 
 func New() *Store {
-	return &Store{}
+	return &Store{
+		db: make(map[MetricPath]model.Metric),
+	}
 }
 
 func (s *Store) MetricStore(_ context.Context, m model.Metric) error {

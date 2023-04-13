@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 
@@ -43,17 +44,17 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Config Router ...
 func (s *server) configureRouter() {
-	// s.router.HandleFunc("/health", s.handleHealth())
+	s.router.HandleFunc("/health", s.handleHealth())
 	/// update/counter/someMetric/527 HTTP/1.1
 	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("POST")
 
 }
 func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//валидпаци
 
 		params := mux.Vars(r)
-
+		s.logger.Info("Update")
+		s.logger.Info(params)
 		var (
 			mt    model.MetricType
 			delta int64   // значение метрики в случае передачи counter
@@ -77,6 +78,7 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			// http.Error(w, err.Error(), 500)
 			return
 		}
 
@@ -87,9 +89,18 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			Value: value,
 		}); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			// http.Error(w, err.Error(), 500)
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
+	}
+}
+func (s *server) handleHealth() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Info("Test Health")
+
+		io.WriteString(w, "Test Health")
+
 	}
 }
