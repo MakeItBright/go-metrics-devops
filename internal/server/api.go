@@ -3,13 +3,13 @@ package server
 import (
 	"net/http"
 
-	"github.com/MakeItBright/go-metrics-devops/internal/store/teststore"
+	"github.com/MakeItBright/go-metrics-devops/internal/storage/inmem"
 )
 
 // Start
 func Start(config *Config) error {
 
-	store := teststore.New()
+	store := inmem.New()
 
 	srv := newServer(store)
 

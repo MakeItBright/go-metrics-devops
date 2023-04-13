@@ -2,7 +2,10 @@ module github.com/MakeItBright/go-metrics-devops
 
 go 1.20
 
-require github.com/sirupsen/logrus v1.9.0
+require (
+	github.com/golang/mock v1.6.0
+	github.com/sirupsen/logrus v1.9.0
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

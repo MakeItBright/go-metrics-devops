@@ -1,11 +1,11 @@
 package server
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
+	"strconv"
 
-	"github.com/MakeItBright/go-metrics-devops/internal/store"
+	"github.com/MakeItBright/go-metrics-devops/internal/model"
+	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -14,15 +14,22 @@ import (
 type server struct {
 	logger *logrus.Logger
 	router *mux.Router
-	store  store.Store
+	sm     storage.Metric
+}
+
+type Metric struct {
+	Name  string  // имя метрики
+	Type  string  // параметр, принимающий значение gauge или counter
+	Delta int64   // значение метрики в случае передачи counter
+	Value float64 // значение метрики в случае передачи gauge
 }
 
 // New ...
-func newServer(store store.Store) *server {
+func newServer(sm storage.Metric) *server {
 	s := &server{
 		logger: logrus.New(),
 		router: mux.NewRouter(),
-		store:  store,
+		sm:     sm,
 	}
 	s.configureRouter()
 
@@ -36,72 +43,53 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Config Router ...
 func (s *server) configureRouter() {
-	s.router.HandleFunc("/health", s.handleHealth())
+	// s.router.HandleFunc("/health", s.handleHealth())
 	/// update/counter/someMetric/527 HTTP/1.1
-	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("GET", "POST")
+	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("POST")
 
 }
-
 func (s *server) handlePostUpdateMetric() http.HandlerFunc {
-
-	// type request struct {
-	// 	Name  string // имя метрики
-	// 	MType string // параметр, принимающий значение gauge или counter
-	// }
-	type Metric struct {
-		MName  string  // имя метрики
-		MType  string  // параметр, принимающий значение gauge или counter
-		Delta  int64   // значение метрики в случае передачи counter
-		MValue float64 // значение метрики в случае передачи gauge
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		//валидпаци
 
-		s.logger.Info("HandlePostUpdateMetric")
-		s.logger.Info(mux.Vars(r))
+		params := mux.Vars(r)
 
-		var metrics Metric
-		// Convert the map to JSON
-		jsonData, _ := json.Marshal(mux.Vars(r))
-		err := json.Unmarshal(jsonData, &metrics)
+		var (
+			mt    model.MetricType
+			delta int64   // значение метрики в случае передачи counter
+			value float64 // значение метрики в случае передачи gauge
+			err   error
+		)
 
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		s.logger.Info(metrics)
-		s.logger.Info(metrics.MName)
-		s.logger.Info(metrics.MType)
-		s.logger.Info(metrics.MValue)
-
-		switch metrics.MType {
+		switch params["mtype"] {
 		case "gauge":
-			s.store.Metric().SaveGaugeValue(metrics.MName, metrics.MValue)
-			w.Header().Set("content-type", "application/json; charset=UTF-8")
-			w.WriteHeader(http.StatusOK)
-			s.logger.Info("Save Gauge")
+			mt = model.MetricTypeGauge
+			delta, err = strconv.ParseInt(params["mvalue"], 10, 64)
+
 		case "counter":
+			mt = model.MetricTypeCounter
+			value, err = strconv.ParseFloat(params["mvalue"], 64)
 
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		// if err != nil {
-		// 	http.Error(w, err.Error(), 500)
-		// 	return
-		// }
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-		// store.MetricRepository.SaveGaugeValue()
-		w.Header().Add("Content-Type", "text/plain")
+		if err = s.sm.MetricStore(r.Context(), model.Metric{
+			Name:  model.MetricName(params["mname"]),
+			Type:  mt,
+			Delta: delta,
+			Value: value,
+		}); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		//ttp.StatusNotFound
-	}
-}
-
-func (s *server) handleHealth() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		io.WriteString(w, "Test Health")
 	}
 }
