@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServer_HandleUsersCreate(t *testing.T) {
+func TestServer_HandleHealth(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/health", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/health", nil)
 	s := newServer(inmem.New())
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, rec.Code, http.StatusOK)
