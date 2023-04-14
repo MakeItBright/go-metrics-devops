@@ -11,10 +11,10 @@ run:
 
 ## build: Build  application
 buildserver:
-	@mkdir -p ./build
-	@CGO_ENABLED=0 go build -o ./build/server  ./cmd/server/main.go
+	## @mkdir -p ./build
+	@CGO_ENABLED=0 go build -o ./cmd/server/server  ./cmd/server/main.go
 
 ## build: Build  application
 buildagent:
-	@mkdir -p ./build
-	@CGO_ENABLED=0 go build -o ./build/agent  ./cmd/agent/main.go
+	## @mkdir -p ./build
+	@CGO_ENABLED=0 go build -o ./cmd/agent/agent  ./cmd/agent/main.go

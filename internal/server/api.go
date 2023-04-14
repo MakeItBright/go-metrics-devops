@@ -15,7 +15,7 @@ var (
 func init() {
 	// регистрируем переменную flagRunAddr
 	// как аргумент -a со значением localhost:8080 по умолчанию
-	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
+	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
 }
 
 // Start
