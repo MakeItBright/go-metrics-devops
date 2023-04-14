@@ -7,14 +7,15 @@ import (
 
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 )
 
 // Server ...
 type server struct {
 	logger *logrus.Logger
-	router *mux.Router
+	router *chi.Mux
 	sm     storage.Metric
 }
 
@@ -29,7 +30,7 @@ type Metric struct {
 func newServer(sm storage.Metric) *server {
 	s := &server{
 		logger: logrus.New(),
-		router: mux.NewRouter(),
+		router: chi.NewRouter(),
 		sm:     sm,
 	}
 	s.configureRouter()
@@ -42,19 +43,28 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
-// Config Router ...
+// Router return chi.Router for testing and actual work
 func (s *server) configureRouter() {
-	s.router.HandleFunc("/health", s.handleHealth())
-	/// update/counter/someMetric/527 HTTP/1.1
-	s.router.HandleFunc("/update/{mtype}/{mname}/{mvalue}", s.handlePostUpdateMetric()).Methods("POST")
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.StripSlashes)
+	s.router.Get("/health", s.handleHealth())
+	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric())
 
 }
+
+// handlePostUpdateMetric
 func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		params := mux.Vars(r)
-		s.logger.Info("Update")
-		s.logger.Info(params)
+		metricType := chi.URLParam(r, "metricType")
+		metricName := chi.URLParam(r, "metricName")
+		metricValue := chi.URLParam(r, "metricValue")
+
+		if metricType != "gauge" && metricType != "counter" {
+			http.Error(w, "Не поддерживаемый тип метрики", http.StatusNotImplemented)
+			return
+		}
+
 		var (
 			mt    model.MetricType
 			delta int64   // значение метрики в случае передачи counter
@@ -62,14 +72,14 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			err   error
 		)
 
-		switch params["mtype"] {
+		switch metricType {
 		case "gauge":
 			mt = model.MetricTypeGauge
-			delta, err = strconv.ParseInt(params["mvalue"], 10, 64)
+			value, err = strconv.ParseFloat(metricValue, 64)
 
 		case "counter":
 			mt = model.MetricTypeCounter
-			value, err = strconv.ParseFloat(params["mvalue"], 64)
+			delta, err = strconv.ParseInt(metricValue, 10, 64)
 
 		default:
 			w.WriteHeader(http.StatusBadRequest)
@@ -83,7 +93,7 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 		}
 
 		if err = s.sm.MetricStore(r.Context(), model.Metric{
-			Name:  model.MetricName(params["mname"]),
+			Name:  model.MetricName(metricName),
 			Type:  mt,
 			Delta: delta,
 			Value: value,
@@ -93,7 +103,10 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			return
 		}
 
+		// response answer
+		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`Metric updated`))
 	}
 }
 func (s *server) handleHealth() http.HandlerFunc {
