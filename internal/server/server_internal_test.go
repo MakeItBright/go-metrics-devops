@@ -1,7 +1,7 @@
 package server
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -76,7 +76,7 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 			s.ServeHTTP(rec, req)
 			assert.Equal(t, tt.want.code, rec.Code)
 
-			respBody, _ := ioutil.ReadAll(rec.Body)
+			respBody, _ := io.ReadAll(rec.Body)
 
 			for _, s := range tt.want.body {
 				assert.Contains(t, string(respBody), s)

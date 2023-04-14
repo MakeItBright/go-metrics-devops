@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -10,6 +11,20 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 )
+
+var (
+	flagRunAddr        string // неэкспортированная переменная flagRunAddr содержит адрес и порт для запуска сервера
+	flagPollInterval   int
+	flagReportInterval int
+)
+
+func init() {
+	// регистрируем переменную flagRunAddr
+	// как аргумент -a со значением localhost:8080 по умолчанию
+	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
+	flag.IntVar(&flagReportInterval, "r", 10, "interval of report")
+	flag.IntVar(&flagPollInterval, "p", 2, "interval of poll")
+}
 
 // Agent ...
 type agent struct {
@@ -25,10 +40,11 @@ const (
 
 // Start
 func Start(config *Config) error {
+	flag.Parse()
 
 	client := resty.New()
 	urls := make([]string, 29)
-	host := "http://localhost:8080"
+	host := "http://" + flagRunAddr
 	ag := newAgent()
 
 	var mem runtime.MemStats
