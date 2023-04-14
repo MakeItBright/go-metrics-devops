@@ -3,9 +3,12 @@ package agent
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math/rand"
+	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -31,16 +34,34 @@ type agent struct {
 	logger *logrus.Logger
 }
 
-const (
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
-)
-
 // var metrics = []string{"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys", "HeapAlloc","HeapIdle", "HeapInuse", "HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys","MSpanInuse", "MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs","PollCount", "RandomValue", "StackInuse", "StackSys", "Sys", "TotalAlloc"}
 
 // Start
 func Start(config *Config) error {
 	flag.Parse()
+	var (
+		pollInterval   = 2 * time.Second
+		reportInterval = 10 * time.Second
+	)
+	if envBindAddr := os.Getenv("ADDRESS"); envBindAddr != "" {
+		flagRunAddr = envBindAddr
+	}
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+
+		r, err := strconv.Atoi(envReportInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		reportInterval = time.Duration(r) * time.Second
+	}
+	if envpollInterval := os.Getenv("POLL_INTERVAL"); envpollInterval != "" {
+
+		p, err := strconv.Atoi(envpollInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pollInterval = time.Duration(p) * time.Second
+	}
 
 	client := resty.New()
 	urls := make([]string, 29)
