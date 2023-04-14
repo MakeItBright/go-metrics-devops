@@ -127,7 +127,20 @@ func (s *server) handleGetMetric() http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf("%v", m.Value)))
+
+		if metricType != "gauge" && metricType != "counter" {
+			http.Error(w, "Не поддерживаемый тип метрики", http.StatusNotImplemented)
+			return
+		}
+		switch metricType {
+		case "gauge":
+			w.Write([]byte(fmt.Sprintf("%v", m.Value)))
+		case "counter":
+			w.Write([]byte(fmt.Sprintf("%v", m.Delta)))
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 	}
 }
