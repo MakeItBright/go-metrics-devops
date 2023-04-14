@@ -95,16 +95,29 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			// http.Error(w, err.Error(), 500)
 			return
 		}
-
-		if err = s.sm.MetricStore(r.Context(), model.Metric{
-			Name:  model.MetricName(metricName),
-			Type:  mt,
-			Delta: delta,
-			Value: value,
-		}); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			// http.Error(w, err.Error(), 500)
-			return
+		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
+		if err != nil {
+			if err = s.sm.MetricStore(r.Context(), model.Metric{
+				Name:  model.MetricName(metricName),
+				Type:  mt,
+				Delta: delta,
+				Value: value,
+			}); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				// http.Error(w, err.Error(), 500)
+				return
+			}
+		} else {
+			if err = s.sm.MetricStore(r.Context(), model.Metric{
+				Name:  model.MetricName(metricName),
+				Type:  mt,
+				Delta: delta + m.Delta,
+				Value: value,
+			}); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				// http.Error(w, err.Error(), 500)
+				return
+			}
 		}
 
 		// response answer
@@ -126,7 +139,6 @@ func (s *server) handleGetMetric() http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
 
 		if metricType != "gauge" && metricType != "counter" {
 			http.Error(w, "Не поддерживаемый тип метрики", http.StatusNotImplemented)
@@ -141,6 +153,7 @@ func (s *server) handleGetMetric() http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 
 	}
 }
