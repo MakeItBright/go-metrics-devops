@@ -9,12 +9,5 @@ import (
 type Metric interface {
 	MetricStore(context.Context, model.Metric) error
 	MetricFetch(context.Context, model.MetricType, model.MetricName) (model.Metric, error)
+	MetricAll() map[model.MetricPath]model.Metric
 }
-
-// type Storage interface {
-// 	MetricInc(Metric, counter int64)
-// 	MetricUpdate(string, gauge float64)
-// 	GetCounterValue(name string) (int64, error)
-// 	GetGaugeValue(name string) (float64, error)
-// 	GetAllValues() string
-// }

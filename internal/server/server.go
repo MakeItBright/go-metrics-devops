@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"text/template"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
@@ -19,6 +21,7 @@ type server struct {
 	sm     storage.Metric
 }
 
+// Metric ...
 type Metric struct {
 	Name  string  `json:"id"`              // имя метрики
 	Type  string  `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -48,8 +51,9 @@ func (s *server) configureRouter() {
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth())
+	s.router.Get("/", s.handleGetAllMetrics())
 	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric())
-
+	s.router.Get("/value/{metricType}/{metricName}", s.handleGetMetric())
 }
 
 // handlePostUpdateMetric
@@ -91,16 +95,29 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			// http.Error(w, err.Error(), 500)
 			return
 		}
-
-		if err = s.sm.MetricStore(r.Context(), model.Metric{
-			Name:  model.MetricName(metricName),
-			Type:  mt,
-			Delta: delta,
-			Value: value,
-		}); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			// http.Error(w, err.Error(), 500)
-			return
+		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
+		if err != nil {
+			if err = s.sm.MetricStore(r.Context(), model.Metric{
+				Name:  model.MetricName(metricName),
+				Type:  mt,
+				Delta: delta,
+				Value: value,
+			}); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				// http.Error(w, err.Error(), 500)
+				return
+			}
+		} else {
+			if err = s.sm.MetricStore(r.Context(), model.Metric{
+				Name:  model.MetricName(metricName),
+				Type:  mt,
+				Delta: delta + m.Delta,
+				Value: value,
+			}); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				// http.Error(w, err.Error(), 500)
+				return
+			}
 		}
 
 		// response answer
@@ -109,10 +126,55 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 		w.Write([]byte(`Metric updated`))
 	}
 }
+
+// handleGetMetricво значение метрики
+func (s *server) handleGetMetric() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Info("Get Metric")
+		metricType := chi.URLParam(r, "metricType")
+		metricName := chi.URLParam(r, "metricName")
+		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+
+		if metricType != "gauge" && metricType != "counter" {
+			http.Error(w, "Не поддерживаемый тип метрики", http.StatusNotImplemented)
+			return
+		}
+		switch metricType {
+		case "gauge":
+			w.Write([]byte(fmt.Sprintf("%v", m.Value)))
+		case "counter":
+			w.Write([]byte(fmt.Sprintf("%d", m.Delta)))
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+
+	}
+}
+
+// handleGetAllMetrics  возвращающая все имеющиеся метрики и их значения в виде HTML-страницы
+func (s *server) handleGetAllMetrics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Info("All Metrics")
+		tmpl, err := template.ParseFiles("templates/index.go.html")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		s.logger.Info(s.sm.MetricAll())
+		tmpl.Execute(w, s.sm.MetricAll())
+	}
+}
+
 func (s *server) handleHealth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.logger.Info("Test Health")
-
 		io.WriteString(w, "Test Health")
 
 	}

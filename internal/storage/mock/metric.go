@@ -35,6 +35,20 @@ func (m *MockMetricStorage) EXPECT() *MockMetricStorageMockRecorder {
 	return m.recorder
 }
 
+// MetricAll mocks base method.
+func (m *MockMetricStorage) MetricAll() map[model.MetricPath]model.Metric {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MetricAll")
+	ret0, _ := ret[0].(map[model.MetricPath]model.Metric)
+	return ret0
+}
+
+// MetricAll indicates an expected call of MetricAll.
+func (mr *MockMetricStorageMockRecorder) MetricAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MetricAll", reflect.TypeOf((*MockMetricStorage)(nil).MetricAll))
+}
+
 // MetricFetch mocks base method.
 func (m *MockMetricStorage) MetricFetch(arg0 context.Context, arg1 model.MetricType, arg2 model.MetricName) (model.Metric, error) {
 	m.ctrl.T.Helper()
