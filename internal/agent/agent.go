@@ -18,7 +18,7 @@ type agent struct {
 
 const (
 	pollInterval   = 2 * time.Second
-	reportInterval = 2 * time.Second
+	reportInterval = 10 * time.Second
 )
 
 // var metrics = []string{"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys", "HeapAlloc","HeapIdle", "HeapInuse", "HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys","MSpanInuse", "MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs","PollCount", "RandomValue", "StackInuse", "StackSys", "Sys", "TotalAlloc"}

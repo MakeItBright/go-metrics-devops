@@ -117,7 +117,7 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 // handleGetMetricво значение метрики
 func (s *server) handleGetMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.logger.Info("Get Metris")
+		s.logger.Info("Get Metric")
 		metricType := chi.URLParam(r, "metricType")
 		metricName := chi.URLParam(r, "metricName")
 		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
@@ -136,7 +136,7 @@ func (s *server) handleGetMetric() http.HandlerFunc {
 		case "gauge":
 			w.Write([]byte(fmt.Sprintf("%v", m.Value)))
 		case "counter":
-			w.Write([]byte(fmt.Sprintf("%v", m.Delta)))
+			w.Write([]byte(fmt.Sprintf("%d", m.Delta)))
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 			return
