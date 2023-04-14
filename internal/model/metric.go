@@ -9,6 +9,7 @@ const (
 
 type MetricName string
 
+type MetricPath string
 type Metric struct {
 	Name  MetricName // имя метрики
 	Type  MetricType // параметр, принимающий значение gauge или counter

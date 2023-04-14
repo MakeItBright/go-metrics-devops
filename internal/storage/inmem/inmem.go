@@ -8,21 +8,19 @@ import (
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 )
 
-type MetricPath string
-
-func Path(mt model.MetricType, mn model.MetricName) MetricPath {
-	return MetricPath(path.Join(string(mt), string(mn)))
+func Path(mt model.MetricType, mn model.MetricName) model.MetricPath {
+	return model.MetricPath(path.Join(string(mt), string(mn)))
 }
 
 // Store ...
 type Store struct {
 	// metricRepository *MetricRepository
-	db map[MetricPath]model.Metric
+	db map[model.MetricPath]model.Metric
 }
 
 func New() *Store {
 	return &Store{
-		db: make(map[MetricPath]model.Metric),
+		db: make(map[model.MetricPath]model.Metric),
 	}
 }
 
@@ -38,18 +36,6 @@ func (s *Store) MetricFetch(_ context.Context, mt model.MetricType, mn model.Met
 	return m, nil
 }
 
-// Metric ...
-// func (s *Store) Metric() store.MetricRepository {
-
-// 	if s.metricRepository != nil {
-// 		return s.metricRepository
-// 	}
-// 	s.metricRepository = &MetricRepository{
-// 		gaugeMap:   GaugeMap(make(map[string]float64)),
-// 		counterMap: CounterMap(make(map[string]int64)),
-// 	}
-
-// 	return s.metricRepository
-// }
-
-// s.Metric().Save()
+func (s *Store) MetricAll() map[model.MetricPath]model.Metric {
+	return s.db
+}

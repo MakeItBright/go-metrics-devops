@@ -9,7 +9,7 @@ import (
 
 func TestStore_MetricStore(t *testing.T) {
 	type fields struct {
-		db map[MetricPath]model.Metric
+		db map[model.MetricPath]model.Metric
 	}
 	type args struct {
 		in0 context.Context
