@@ -3,6 +3,7 @@ module github.com/MakeItBright/go-metrics-devops
 go 1.20
 
 require (
+	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/go-chi/chi v1.5.4
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/mock v1.6.0
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 )
