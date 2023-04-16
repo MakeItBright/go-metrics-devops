@@ -3,6 +3,8 @@ package agent
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
+	"runtime"
 	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/config"
@@ -32,7 +34,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 	a.logger.Info("====")
 	// создаем REST-клиент для отправки HTTP-запросов
 	client := resty.New()
-	urls := make([]string, 2)
+	urls := make([]string, 28)
 	host := "http://" + cfg.Address
 
 	// устанавливаем интервал для периодической отправки HTTP-запросов
@@ -44,7 +46,8 @@ func RunAgent(cfg *config.AgentConfig) error {
 	reportInterval := cfg.ReportInterval
 	reportTicker := time.NewTicker(reportInterval)
 	defer reportTicker.Stop()
-
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
 	// запускаем бесконечный цикл для периодической отправки HTTP-запросов
 	for {
 
@@ -63,9 +66,33 @@ func RunAgent(cfg *config.AgentConfig) error {
 				"%s/update/gauge/%s/%d",
 				host, "RandomValue", rand.Intn(1000000),
 			)
+
+			v := reflect.ValueOf(mem)
+			tof := v.Type()
+
+			for j := 0; j < v.NumField(); j++ {
+
+				val := 0.0
+				if !v.Field(j).CanUint() && !v.Field(j).CanFloat() {
+					continue
+				} else if !v.Field(j).CanUint() {
+					val = v.Field(j).Float()
+				} else {
+					val = float64(v.Field(j).Uint())
+				}
+				name := tof.Field(j).Name
+				urls[i] = fmt.Sprintf(
+					"%s/update/gauge/%s/%f",
+					host, name, val,
+				)
+				i++
+				a.logger.Infof("%s = %f", name, val)
+
+			}
 		case <-reportTicker.C:
 			// отправляем HTTP-запросы на указанные адреса
 			a.logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
+			a.logger.Info(urls)
 			a.doRequest(urls, client)
 		}
 	}
