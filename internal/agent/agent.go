@@ -70,7 +70,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 				"%s/update/gauge/%s/%d",
 				host, "RandomValue", rand.Intn(1000000),
 			)
-
+			i++
 			v := reflect.ValueOf(mem)
 			tof := v.Type()
 
