@@ -45,6 +45,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 	defer reportTicker.Stop()
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
+	i := 0
 	// запускаем бесконечный цикл для периодической отправки HTTP-запросов
 	for {
 
@@ -56,7 +57,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 		case <-reportTicker.C:
 			// отправляем HTTP-запросы на указанные адреса
 			a.logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
-			i := 0
+			i = 0
 			urls[i] = fmt.Sprintf(
 				"%s/update/counter/%s/%d",
 				host, "PollCount", 1,
