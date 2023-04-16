@@ -34,7 +34,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 	a.logger.Info("====")
 	// создаем REST-клиент для отправки HTTP-запросов
 	client := resty.New()
-	urls := make([]string, 28)
+	urls := make([]string, 29)
 	host := "http://" + cfg.Address
 
 	// устанавливаем интервал для периодической отправки HTTP-запросов
@@ -55,6 +55,10 @@ func RunAgent(cfg *config.AgentConfig) error {
 		case <-pollTicker.C:
 			// собираем метрики
 			a.logger.Infof("agent is running, collect metrics every %v seconds", pollInterval.Seconds())
+
+		case <-reportTicker.C:
+			// отправляем HTTP-запросы на указанные адреса
+			a.logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
 			i := 0
 			urls[i] = fmt.Sprintf(
 				"%s/update/counter/%s/%d",
@@ -89,9 +93,7 @@ func RunAgent(cfg *config.AgentConfig) error {
 				a.logger.Infof("%s = %f", name, val)
 
 			}
-		case <-reportTicker.C:
-			// отправляем HTTP-запросы на указанные адреса
-			a.logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
+
 			a.logger.Info(urls)
 			a.doRequest(urls, client)
 		}
