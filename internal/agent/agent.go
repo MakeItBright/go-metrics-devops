@@ -15,7 +15,7 @@ type agent struct {
 	logger *logrus.Logger // логгер для отслеживания ошибок
 }
 
-// newAgent() - создает новый экземпляр агента и возвращает его указатель
+// newAgent - создает новый экземпляр агента и возвращает его указатель
 func newAgent() *agent {
 	a := &agent{
 		logger: logrus.New(),
@@ -27,7 +27,9 @@ func newAgent() *agent {
 func RunAgent(cfg *config.AgentConfig) error {
 	// создаем новый агент
 	a := newAgent()
+	a.logger.Info("====")
 	a.logger.Info(cfg)
+	a.logger.Info("====")
 	// создаем REST-клиент для отправки HTTP-запросов
 	client := resty.New()
 	urls := make([]string, 2)

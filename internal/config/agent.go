@@ -32,12 +32,12 @@ type AgentConfig struct {
 // NewAgentConfig - создает новую структуру конфигурации агента
 func NewAgentConfig() *AgentConfig {
 	// устанавливаем значения флагов командной строки
-	flag.StringVar(&flagAddress, "a", defaultAddress, "ADDRESS=<ЗНАЧЕНИЕ> адрес эндпоинта HTTP-сервера")
-	flag.DurationVar(&flagPollInterval, "p", defaultPollInterval, "POLL_INTERVAL=<ЗНАЧЕНИЕ> частота опроса метрик ")
-	flag.DurationVar(&flagReportInterval, "r", defaultReportInterval, "REPORT_INTERVAL=<ЗНАЧЕНИЕ> частоту отправки метрик на сервер")
+	flag.StringVar(&flagAddress, "a", defaultAddress, "адрес эндпоинта HTTP-сервера")
+	flag.DurationVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
+	flag.DurationVar(&flagReportInterval, "r", defaultReportInterval, "частоту отправки метрик на сервер")
 	flag.Parse()
 
-	// создаем новую структуру конфигурации агента, заполняем ее значениями из флагов командной строки или из переменных окружения
+	// создаем новую структуру конфигурации агента, заполняем ее значениями из флагов командной строки
 	cfg := &AgentConfig{
 		Address:        flagAddress,
 		PollInterval:   flagPollInterval,

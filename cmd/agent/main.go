@@ -8,8 +8,9 @@ import (
 )
 
 func main() {
-
+	// создаем новую структуру конфигурации агента
 	cfg := config.NewAgentConfig()
+	// запускаем агента с заданной конфигурацией
 	if err := agent.RunAgent(cfg); err != nil {
 		log.Fatal(err)
 	}
