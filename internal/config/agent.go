@@ -29,12 +29,16 @@ type AgentConfig struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"` // интервал между отправками метрик
 }
 
-// NewAgentConfig - создает новую структуру конфигурации агента
-func NewAgentConfig() *AgentConfig {
-	// устанавливаем значения флагов командной строки
+func init() {
 	flag.StringVar(&flagAddress, "a", defaultAddress, "адрес эндпоинта HTTP-сервера")
 	flag.DurationVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
 	flag.DurationVar(&flagReportInterval, "r", defaultReportInterval, "частоту отправки метрик на сервер")
+}
+
+// NewAgentConfig - создает новую структуру конфигурации агента
+func NewAgentConfig() *AgentConfig {
+	// устанавливаем значения флагов командной строки
+
 	flag.Parse()
 
 	// создаем новую структуру конфигурации агента, заполняем ее значениями из флагов командной строки

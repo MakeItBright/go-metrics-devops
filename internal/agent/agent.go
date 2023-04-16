@@ -29,9 +29,6 @@ func newAgent() *agent {
 func RunAgent(cfg *config.AgentConfig) error {
 	// создаем новый агент
 	a := newAgent()
-	a.logger.Info("====")
-	a.logger.Info(cfg)
-	a.logger.Info("====")
 	// создаем REST-клиент для отправки HTTP-запросов
 	client := resty.New()
 	urls := make([]string, 29)
