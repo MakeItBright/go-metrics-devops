@@ -7,28 +7,16 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/MakeItBright/go-metrics-devops/internal/config"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 )
 
-// Agent представляет агент, который будет запускать метрики
-type agent struct {
-	logger *logrus.Logger // логгер для отслеживания ошибок
-}
-
-// newAgent - создает новый экземпляр агента и возвращает его указатель
-func newAgent() *agent {
-	a := &agent{
-		logger: logrus.New(),
+// Run запуск агента с переданной конфигурацией
+func Run(cfg Config) error {
+	if cfg.Logger == nil {
+		cfg.Logger = logrus.StandardLogger()
 	}
-	return a
-}
 
-// RunAgent - запуск агента с переданной конфигурацией
-func RunAgent(cfg *config.AgentConfig) error {
-	// создаем новый агент
-	a := newAgent()
 	// создаем REST-клиент для отправки HTTP-запросов
 	client := resty.New()
 	urls := make([]string, 29)
@@ -43,8 +31,10 @@ func RunAgent(cfg *config.AgentConfig) error {
 	reportInterval := cfg.ReportInterval
 	reportTicker := time.NewTicker(reportInterval)
 	defer reportTicker.Stop()
+
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
+
 	i := 0
 	// запускаем бесконечный цикл для периодической отправки HTTP-запросов
 	for {
@@ -52,11 +42,11 @@ func RunAgent(cfg *config.AgentConfig) error {
 		select {
 		case <-pollTicker.C:
 			// собираем метрики
-			a.logger.Infof("agent is running, collect metrics every %v seconds", pollInterval.Seconds())
+			cfg.Logger.Infof("agent is running, collect metrics every %v seconds", pollInterval.Seconds())
 
 		case <-reportTicker.C:
 			// отправляем HTTP-запросы на указанные адреса
-			a.logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
+			cfg.Logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
 			i = 0
 			urls[i] = fmt.Sprintf(
 				"%s/update/counter/%s/%d",
@@ -88,24 +78,23 @@ func RunAgent(cfg *config.AgentConfig) error {
 					host, name, val,
 				)
 				i++
-				a.logger.Infof("%s = %f", name, val)
+				cfg.Logger.Infof("%s = %f", name, val)
 
 			}
 
-			a.logger.Info(urls)
-			a.doRequest(urls, client)
+			doRequest(urls, client, cfg.Logger)
 		}
 	}
 }
 
 // doRequest - отправка HTTP-запросов на указанные адреса
-func (a *agent) doRequest(urls []string, client *resty.Client) {
+func doRequest(urls []string, client *resty.Client, logger *logrus.Logger) {
 	for _, url := range urls {
 		_, err := client.R().
 			Post(url)
 
 		if err != nil {
-			a.logger.Errorf("failed to send request to %v: %v", url, err)
+			logger.Errorf("failed to send request to %v: %v", url, err)
 		}
 	}
 }
