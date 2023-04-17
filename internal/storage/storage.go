@@ -1,11 +1,18 @@
 package storage
 
+import (
+	"path"
+
+	"github.com/MakeItBright/go-metrics-devops/internal/model"
+)
+
 // Storage - интерфейс для хранения метрик
 type Storage interface {
 	AddGauge(name string, value float64)
 	AddCounter(name string, value int64)
 	GetGauge(name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
+	GetAllMetrics() map[model.MetricPath]model.Metric
 }
 
 // MemStorage - реализация интерфейса Storage в памяти.
@@ -47,17 +54,29 @@ func (s *MemStorage) GetCounter(name string) (int64, bool) {
 }
 
 // GetAllMetrics возвращает все метрики в map.
-// map[string]interface{} содержит значения float64 и int64.
-func (s *MemStorage) GetAllMetrics() map[string]interface{} {
-	metrics := make(map[string]interface{})
+func (s *MemStorage) GetAllMetrics() map[model.MetricPath]model.Metric {
+
+	metrics := make(map[model.MetricPath]model.Metric)
 
 	for name, val := range s.gaugeMap {
-		metrics[name] = val
+		metrics[Path(model.MetricTypeGauge, model.MetricName(name))] = model.Metric{
+			Name:  model.MetricName(name),
+			Type:  model.MetricTypeGauge,
+			Value: val,
+		}
 	}
 
 	for name, val := range s.counterMap {
-		metrics[name] = val
+		metrics[Path(model.MetricTypeCounter, model.MetricName(name))] = model.Metric{
+			Name:  model.MetricName(name),
+			Type:  model.MetricTypeCounter,
+			Delta: val,
+		}
 	}
 
 	return metrics
+}
+
+func Path(mt model.MetricType, mn model.MetricName) model.MetricPath {
+	return model.MetricPath(path.Join(string(mt), string(mn)))
 }
