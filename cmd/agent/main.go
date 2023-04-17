@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/agent"
@@ -13,23 +14,23 @@ import (
 const (
 	defaultAddress        = "localhost:8080"
 	defaultScheme         = "http"
-	defaultPollInterval   = 2 * time.Second  // интервал обновления метрик по умолчанию
-	defaultReportInterval = 10 * time.Second // интервал отправки метрик на сервер по умолчанию
+	defaultPollInterval   = 2  // интервал обновления метрик по умолчанию
+	defaultReportInterval = 10 // интервал отправки метрик на сервер по умолчанию
 )
 
 // неэкспортированные переменные flagAddress, flagPollInterval, flagReportInterval,
 // содержат значения флагов командной строки
 var (
 	flagAddress        string
-	flagPollInterval   time.Duration
-	flagReportInterval time.Duration
+	flagPollInterval   int
+	flagReportInterval int
 )
 
 func init() {
 	// устанавливаем значения флагов командной строки
 	flag.StringVar(&flagAddress, "a", defaultAddress, "адрес эндпоинта HTTP-сервера")
-	flag.DurationVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
-	flag.DurationVar(&flagReportInterval, "r", defaultReportInterval, "частоту отправки метрик на сервер")
+	flag.IntVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
+	flag.IntVar(&flagReportInterval, "r", defaultReportInterval, "частоту отправки метрик на сервер")
 }
 
 func main() {
@@ -39,27 +40,35 @@ func main() {
 	// запускаем агента с заданной конфигурацией
 	if err := agent.Run(agent.Config{
 		Address:        flagAddress,
-		PollInterval:   flagPollInterval,
-		ReportInterval: flagReportInterval,
+		PollInterval:   time.Duration(flagPollInterval) * time.Second,
+		ReportInterval: time.Duration(flagReportInterval) * time.Second,
 		Logger:         logrus.New(),
 	}); err != nil {
 		log.Fatal(err)
 	}
 
-	//TODO: add interrapt ctrl+c
+	//TODO: add intercept ctrl+c
 }
 
 func envParse() {
-	// заполняем поля структуры значениями из переменных окружения
 	if envAddress, ok := os.LookupEnv("ADDRESS"); ok && envAddress != "" {
 		flagAddress = envAddress
 	}
 
-	if envPollInterval, err := time.ParseDuration(os.Getenv("POLL_INTERVAL")); err == nil {
-		flagPollInterval = envPollInterval
+	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
+		intPollInterval, err := strconv.Atoi(envPollInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		flagPollInterval = intPollInterval
 	}
 
-	if envReportInterval, err := time.ParseDuration(os.Getenv("REPORT_INTERVAL")); err == nil {
-		flagReportInterval = envReportInterval
+	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
+		intReportInterval, err := strconv.Atoi(envReportInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		flagReportInterval = intReportInterval
 	}
+
 }
