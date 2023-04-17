@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Run запуск агента с переданной конфигурацией
+// Run запуск агента с переданной конфигурацией.
 func Run(cfg Config) error {
 	if cfg.Logger == nil {
 		cfg.Logger = logrus.StandardLogger()
@@ -42,11 +42,18 @@ func Run(cfg Config) error {
 		select {
 		case <-pollTicker.C:
 			// собираем метрики
-			cfg.Logger.Infof("agent is running, collect metrics every %v seconds", pollInterval.Seconds())
+			cfg.Logger.Infof(
+				"agent is running, collect metrics every %v seconds",
+				pollInterval.Seconds(),
+			)
 
 		case <-reportTicker.C:
 			// отправляем HTTP-запросы на указанные адреса
-			cfg.Logger.Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, reportInterval.Seconds())
+			cfg.Logger.Infof(
+				"agent is running, sending requests to %v every %v seconds",
+				cfg.Address,
+				reportInterval.Seconds(),
+			)
 			i = 0
 			urls[i] = fmt.Sprintf(
 				"%s/update/counter/%s/%d",

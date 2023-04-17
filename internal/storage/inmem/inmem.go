@@ -28,7 +28,12 @@ func (s *Store) MetricStore(_ context.Context, m model.Metric) error {
 	s.db[Path(m.Type, m.Name)] = m
 	return nil
 }
-func (s *Store) MetricFetch(_ context.Context, mt model.MetricType, mn model.MetricName) (model.Metric, error) {
+
+func (s *Store) MetricFetch(
+	_ context.Context,
+	mt model.MetricType,
+	mn model.MetricName,
+) (model.Metric, error) {
 	m, ok := s.db[Path(mt, mn)]
 	if !ok {
 		return model.Metric{}, errors.New("error db")

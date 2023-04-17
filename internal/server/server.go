@@ -95,7 +95,11 @@ func (s *server) handlePostUpdateMetric() http.HandlerFunc {
 			// http.Error(w, err.Error(), 500)
 			return
 		}
-		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
+		m, err := s.sm.MetricFetch(
+			r.Context(),
+			model.MetricType(metricType),
+			model.MetricName(metricName),
+		)
 		if err != nil {
 			if err = s.sm.MetricStore(r.Context(), model.Metric{
 				Name:  model.MetricName(metricName),
@@ -133,7 +137,11 @@ func (s *server) handleGetMetric() http.HandlerFunc {
 		s.logger.Info("Get Metric")
 		metricType := chi.URLParam(r, "metricType")
 		metricName := chi.URLParam(r, "metricName")
-		m, err := s.sm.MetricFetch(r.Context(), model.MetricType(metricType), model.MetricName(metricName))
+		m, err := s.sm.MetricFetch(
+			r.Context(),
+			model.MetricType(metricType),
+			model.MetricName(metricName),
+		)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

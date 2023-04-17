@@ -18,8 +18,8 @@ const (
 	defaultReportInterval = 10 // интервал отправки метрик на сервер по умолчанию
 )
 
-// неэкспортированные переменные flagAddress, flagPollInterval, flagReportInterval,
-// содержат значения флагов командной строки
+// Не экспортированные переменные, flagAddress, flagPollInterval, flagReportInterval,
+// содержат значения флагов командной строки.
 var (
 	flagAddress        string
 	flagPollInterval   int
@@ -27,17 +27,16 @@ var (
 )
 
 func init() {
-	// устанавливаем значения флагов командной строки
 	flag.StringVar(&flagAddress, "a", defaultAddress, "адрес эндпоинта HTTP-сервера")
 	flag.IntVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
-	flag.IntVar(&flagReportInterval, "r", defaultReportInterval, "частоту отправки метрик на сервер")
+	flag.IntVar(&flagReportInterval, "r", defaultReportInterval, "частота отправки метрик на сервер")
+
 }
 
 func main() {
 	flag.Parse()
 	envParse()
 
-	// запускаем агента с заданной конфигурацией
 	if err := agent.Run(agent.Config{
 		Address:        flagAddress,
 		PollInterval:   time.Duration(flagPollInterval) * time.Second,
@@ -56,19 +55,19 @@ func envParse() {
 	}
 
 	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
-		intPollInterval, err := strconv.Atoi(envPollInterval)
-		if err != nil {
+		if intPollInterval, err := strconv.Atoi(envPollInterval); err != nil {
 			log.Fatal(err)
+		} else {
+			flagPollInterval = intPollInterval
 		}
-		flagPollInterval = intPollInterval
 	}
 
 	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
-		intReportInterval, err := strconv.Atoi(envReportInterval)
-		if err != nil {
+		if intReportInterval, err := strconv.Atoi(envReportInterval); err != nil {
 			log.Fatal(err)
+		} else {
+			flagReportInterval = intReportInterval
 		}
-		flagReportInterval = intReportInterval
 	}
 
 }
