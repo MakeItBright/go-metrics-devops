@@ -1,31 +1,48 @@
 package agent
 
 import (
+	"math/rand"
+	"runtime"
 	"time"
 
-	"github.com/MakeItBright/go-metrics-devops/internal/monitor"
 	"github.com/MakeItBright/go-metrics-devops/internal/sender"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
+// agent представляет собой структуру для сбора и отправки метрик.
+type agent struct {
+	storage storage.Storage
+	sender  sender.Sender
+}
+
+// Newagent создает новый экземпляр agent.
+func NewAgent(storage storage.Storage, sender sender.Sender) *agent {
+	return &agent{
+		storage: storage,
+		sender:  sender,
+	}
+}
+
 // Run запуск агента с переданной конфигурацией.
-func Run(cfg Config) error {
+func Start(cfg Config) error {
 	if cfg.Logger == nil {
 		cfg.Logger = logrus.StandardLogger()
 	}
 
 	// устанавливаем интервал для периодической отправки HTTP-запросов
-	pollInterval := cfg.PollInterval
-	pollTicker := time.NewTicker(pollInterval)
+	pollTicker := time.NewTicker(cfg.PollInterval)
 	defer pollTicker.Stop()
 
 	// устанавливаем интервал для отправки метрик
-	reportInterval := cfg.ReportInterval
-	reportTicker := time.NewTicker(reportInterval)
+	reportTicker := time.NewTicker(cfg.ReportInterval)
 	defer reportTicker.Stop()
 
-	m := monitor.NewMonitor(storage.NewMemStorage(), *sender.NewSender("http://" + cfg.Address))
+	a := NewAgent(
+		storage.NewMemStorage(),
+		*sender.NewSender(cfg.Scheme + "://" + cfg.Address),
+	)
 
 	// запускаем бесконечный цикл для периодической отправки HTTP-запросов
 	for {
@@ -35,19 +52,95 @@ func Run(cfg Config) error {
 			// собираем метрики
 			cfg.Logger.Infof(
 				"agent is running, collect metrics every %v seconds",
-				pollInterval.Seconds(),
+				cfg.PollInterval.Seconds(),
 			)
-			m.CollectMetrics()
+			a.CollectMetrics()
 
 		case <-reportTicker.C:
 			// отправляем HTTP-запросы на указанные адреса
 			cfg.Logger.Infof(
 				"agent is running, sending requests to %v every %v seconds",
 				cfg.Address,
-				reportInterval.Seconds(),
+				cfg.ReportInterval.Seconds(),
 			)
-			m.Dump()
+			a.Dump()
 
 		}
 	}
+}
+
+// CollectMetrics собирает метрики и сохраняет их в хранилище.
+func (a *agent) CollectMetrics() error {
+	if err := a.collectRuntimeMetrics(); err != nil {
+		return errors.Wrap(err, "failed to collect runtime metrics")
+	}
+
+	if err := a.collectSystemMetrics(); err != nil {
+		return errors.Wrap(err, "failed to collect system metrics")
+	}
+
+	return nil
+
+}
+
+// collectRuntimeMetrics собирает метрики, связанные с работой приложения и сохраняет их в хранилище.
+func (a *agent) collectRuntimeMetrics() error {
+	// здесь логика сбора метрик и сохранения их в storage
+	// get runtime metrics
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+
+	// memory metrics
+	a.storage.AddGauge("Alloc", float64(mem.Alloc))
+	a.storage.AddGauge("TotalAlloc", float64(mem.TotalAlloc))
+	a.storage.AddGauge("Sys", float64(mem.Sys))
+	a.storage.AddGauge("Lookups", float64(mem.Lookups))
+	a.storage.AddGauge("Mallocs", float64(mem.Mallocs))
+	a.storage.AddGauge("Frees", float64(mem.Frees))
+
+	// heap memory metrics
+	a.storage.AddGauge("HeapAlloc", float64(mem.HeapAlloc))
+	a.storage.AddGauge("HeapSys", float64(mem.HeapSys))
+	a.storage.AddGauge("HeapIdle", float64(mem.HeapIdle))
+	a.storage.AddGauge("HeapInuse", float64(mem.HeapInuse))
+	a.storage.AddGauge("HeapReleased", float64(mem.HeapReleased))
+	a.storage.AddGauge("HeapObjects", float64(mem.HeapObjects))
+
+	// stack memory metrics
+	a.storage.AddGauge("StackInuse", float64(mem.StackInuse))
+	a.storage.AddGauge("StackSys", float64(mem.StackSys))
+
+	// GC metrics
+	a.storage.AddGauge("NumGC", float64(mem.NumGC))
+	a.storage.AddGauge("PauseTotalNs", float64(mem.PauseTotalNs))
+	a.storage.AddGauge("LastGC", float64(mem.LastGC))
+	a.storage.AddGauge("NextGC", float64(mem.NextGC))
+
+	a.storage.AddGauge("RandomValue", rand.Float64())
+
+	return nil
+
+}
+
+// collectSystemMetrics собирает метрики, связанные с системными ресурсами и сохраняет их в хранилище.
+func (a *agent) collectSystemMetrics() error {
+	// здесь логика сбора метрик и сохранения их в storage
+	// get system metrics like random and counter
+
+	a.storage.AddCounter("PollCounter", 1)
+
+	return nil
+
+}
+
+// Dump получает все метрики из хранилища и отправляет их на сервер.
+func (a *agent) Dump() error {
+	metrics := a.storage.GetAllMetrics()
+
+	if err := a.sender.SendMetrics(metrics); err != nil {
+		return errors.Wrap(err, "failed to send metrics")
+	}
+
+	return nil
+
 }

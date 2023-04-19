@@ -1,25 +1,27 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/MakeItBright/go-metrics-devops/internal/storage/inmem"
+	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServer_HandleHealth(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/health", nil)
-	s := newServer(inmem.New())
+	s := newServer(storage.NewMemStorage())
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, rec.Code, http.StatusOK)
 }
 
 func Test_server_handlePostUpdateMetric(t *testing.T) {
-	s := newServer(inmem.New())
+	s := newServer(storage.NewMemStorage())
+	fmt.Println(s)
 	type want struct {
 		code int
 		body []string

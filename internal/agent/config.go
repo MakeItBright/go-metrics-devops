@@ -8,6 +8,7 @@ import (
 
 // Config структура конфигурации агента.
 type Config struct {
+	Scheme         string
 	Address        string        // адрес HTTP-сервера
 	PollInterval   time.Duration // интервал обновления метрик
 	ReportInterval time.Duration // интервал между отправками метрик

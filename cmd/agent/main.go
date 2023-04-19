@@ -37,7 +37,8 @@ func main() {
 	flag.Parse()
 	envParse()
 
-	if err := agent.Run(agent.Config{
+	if err := agent.Start(agent.Config{
+		Scheme:         defaultScheme,
 		Address:        flagAddress,
 		PollInterval:   time.Duration(flagPollInterval) * time.Second,
 		ReportInterval: time.Duration(flagReportInterval) * time.Second,
@@ -46,7 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//TODO: add intercept ctrl+c
+	//TODO: add interrupt ctrl+c
 }
 
 func envParse() {

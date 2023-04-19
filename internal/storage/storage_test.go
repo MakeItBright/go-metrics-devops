@@ -20,7 +20,7 @@ func TestMemStorage_AddGauge(t *testing.T) {
 		{
 			name:      "update existing gauge",
 			gaugeName: "test_gauge",
-			value:     4.56,
+			value:     0,
 		},
 	}
 
@@ -44,28 +44,32 @@ func TestMemStorage_AddCounter(t *testing.T) {
 		name        string
 		counterName string
 		value       int64
+		want        int64
 	}{
 		{
 			name:        "add new counter",
 			counterName: "test_counter",
 			value:       123,
+			want:        123,
 		},
 		{
 			name:        "update existing counter",
 			counterName: "test_counter",
-			value:       456,
+			value:       1,
+			want:        124,
 		},
 	}
 
+	storage := storage.NewMemStorage()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := storage.NewMemStorage()
+
 			storage.AddCounter(tt.counterName, tt.value)
 			val, ok := storage.GetCounter(tt.counterName)
 			if !ok {
 				t.Errorf("GetCounter() returned false, expected true")
 			}
-			if val != tt.value {
+			if val != tt.want {
 				t.Errorf("GetCounter() returned %v, expected %v", val, tt.value)
 			}
 		})
