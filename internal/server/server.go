@@ -116,7 +116,7 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	case string(model.MetricTypeGauge):
 		value, ok := s.sm.GetGauge(metricName)
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		w.Write([]byte(fmt.Sprintf("%v", value)))
@@ -124,7 +124,7 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	case string(model.MetricTypeCounter):
 		delta, ok := s.sm.GetCounter(metricName)
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		w.Write([]byte(fmt.Sprintf("%v", delta)))
