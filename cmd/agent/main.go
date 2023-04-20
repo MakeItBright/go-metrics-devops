@@ -2,73 +2,67 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/agent"
-	"github.com/sirupsen/logrus"
 )
 
 const (
-	defaultAddress        = "localhost:8080"
-	defaultScheme         = "http"
-	defaultPollInterval   = 2  // интервал обновления метрик по умолчанию
-	defaultReportInterval = 10 // интервал отправки метрик на сервер по умолчанию
+	addressDefault        = "localhost:8080"
+	schemeDefault         = "http"
+	pollIntervalDefault   = 2  // интервал обновления метрик по умолчанию
+	reportIntervalDefault = 10 // интервал отправки метрик на сервер по умолчанию
 )
-
-// Не экспортированные переменные, flagAddress, flagPollInterval, flagReportInterval,
-// содержат значения флагов командной строки.
-var (
-	flagAddress        string
-	flagPollInterval   int
-	flagReportInterval int
-)
-
-func init() {
-	flag.StringVar(&flagAddress, "a", defaultAddress, "адрес эндпоинта HTTP-сервера")
-	flag.IntVar(&flagPollInterval, "p", defaultPollInterval, "частота опроса метрик ")
-	flag.IntVar(&flagReportInterval, "r", defaultReportInterval, "частота отправки метрик на сервер")
-
-}
 
 func main() {
-	flag.Parse()
-	envParse()
+	cfg := agent.Config{
+		Scheme:         schemeDefault,
+		Address:        addressDefault,
+		PollInterval:   pollIntervalDefault,
+		ReportInterval: reportIntervalDefault,
+	}
 
-	if err := agent.Start(agent.Config{
-		Scheme:         defaultScheme,
-		Address:        flagAddress,
-		PollInterval:   time.Duration(flagPollInterval) * time.Second,
-		ReportInterval: time.Duration(flagReportInterval) * time.Second,
-		Logger:         logrus.New(),
-	}); err != nil {
-		log.Fatal(err)
+	flagParse(&cfg)
+	if err := envParse(&cfg); err != nil {
+		log.Fatalf("cannot parse ENV variables: %s", err)
+	}
+
+	if err := agent.Start(cfg); err != nil {
+		log.Fatalf("cannot start agent: %s", err)
 	}
 
 	//TODO: add interrupt ctrl+c
 }
 
-func envParse() {
+func flagParse(cfg *agent.Config) {
+	flag.StringVar(&cfg.Address, "a", addressDefault, "адрес эндпоинта HTTP-сервера")
+	flag.IntVar(&cfg.PollInterval, "p", pollIntervalDefault, "частота опроса метрик ")
+	flag.IntVar(&cfg.ReportInterval, "r", reportIntervalDefault, "частота отправки метрик на сервер")
+	flag.Parse()
+}
+
+func envParse(cfg *agent.Config) error {
 	if envAddress, ok := os.LookupEnv("ADDRESS"); ok && envAddress != "" {
-		flagAddress = envAddress
+		cfg.Address = envAddress
 	}
 
-	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
-		if intPollInterval, err := strconv.Atoi(envPollInterval); err != nil {
-			log.Fatal(err)
+	if pollIntervalEnv, ok := os.LookupEnv("POLL_INTERVAL"); ok {
+		if pollIntervalInt, err := strconv.Atoi(pollIntervalEnv); err != nil {
+			return fmt.Errorf("cannot parse POLL_INTERVAL: %w", err)
 		} else {
-			flagPollInterval = intPollInterval
+			cfg.PollInterval = pollIntervalInt
 		}
 	}
 
-	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
-		if intReportInterval, err := strconv.Atoi(envReportInterval); err != nil {
-			log.Fatal(err)
+	if reportIntervalEnv, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
+		if reportIntervalInt, err := strconv.Atoi(reportIntervalEnv); err != nil {
+			return fmt.Errorf("cannot parse REPORT_INTERVAL: %w", err)
 		} else {
-			flagReportInterval = intReportInterval
+			cfg.ReportInterval = reportIntervalInt
 		}
 	}
-
+	return nil
 }

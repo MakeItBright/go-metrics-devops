@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +20,7 @@ func TestServer_HandleHealth(t *testing.T) {
 
 func Test_server_handlePostUpdateMetric(t *testing.T) {
 	s := newServer(storage.NewMemStorage())
-	fmt.Println(s)
+
 	type want struct {
 		code int
 		body []string

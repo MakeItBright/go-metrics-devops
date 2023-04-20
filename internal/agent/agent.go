@@ -1,24 +1,24 @@
 package agent
 
 import (
+	"fmt"
+	"log"
 	"math/rand"
 	"runtime"
 	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/sender"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // agent представляет собой структуру для сбора и отправки метрик.
 type agent struct {
 	storage storage.Storage
-	sender  sender.Sender
+	sender  *sender.Sender
 }
 
 // Newagent создает новый экземпляр agent.
-func NewAgent(storage storage.Storage, sender sender.Sender) *agent {
+func NewAgent(storage storage.Storage, sender *sender.Sender) *agent {
 	return &agent{
 		storage: storage,
 		sender:  sender,
@@ -27,21 +27,18 @@ func NewAgent(storage storage.Storage, sender sender.Sender) *agent {
 
 // Run запуск агента с переданной конфигурацией.
 func Start(cfg Config) error {
-	if cfg.Logger == nil {
-		cfg.Logger = logrus.StandardLogger()
-	}
 
 	// устанавливаем интервал для периодической отправки HTTP-запросов
-	pollTicker := time.NewTicker(cfg.PollInterval)
+	pollTicker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 	defer pollTicker.Stop()
 
 	// устанавливаем интервал для отправки метрик
-	reportTicker := time.NewTicker(cfg.ReportInterval)
+	reportTicker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 	defer reportTicker.Stop()
 
 	a := NewAgent(
 		storage.NewMemStorage(),
-		*sender.NewSender(cfg.Scheme + "://" + cfg.Address),
+		sender.NewSender(cfg.Scheme+"://"+cfg.Address),
 	)
 
 	// запускаем бесконечный цикл для периодической отправки HTTP-запросов
@@ -49,44 +46,28 @@ func Start(cfg Config) error {
 
 		select {
 		case <-pollTicker.C:
-			// собираем метрики
-			cfg.Logger.Infof(
-				"agent is running, collect metrics every %v seconds",
-				cfg.PollInterval.Seconds(),
-			)
+			log.Printf("agent is running, collect metrics every %v seconds", cfg.PollInterval)
 			a.CollectMetrics()
 
 		case <-reportTicker.C:
-			// отправляем HTTP-запросы на указанные адреса
-			cfg.Logger.Infof(
-				"agent is running, sending requests to %v every %v seconds",
-				cfg.Address,
-				cfg.ReportInterval.Seconds(),
-			)
-			a.Dump()
+			log.Printf("agent is running, sending requests to %v every %v seconds", cfg.Address, cfg.ReportInterval)
+			if err := a.Dump(); err != nil {
+				log.Printf("ERROR: cannot agennt dump: %s", err)
+			}
 
 		}
 	}
 }
 
 // CollectMetrics собирает метрики и сохраняет их в хранилище.
-func (a *agent) CollectMetrics() error {
-	if err := a.collectRuntimeMetrics(); err != nil {
-		return errors.Wrap(err, "failed to collect runtime metrics")
-	}
-
-	if err := a.collectSystemMetrics(); err != nil {
-		return errors.Wrap(err, "failed to collect system metrics")
-	}
-
-	return nil
+func (a *agent) CollectMetrics() {
+	a.collectRuntimeMetrics()
+	a.collectSystemMetrics()
 
 }
 
 // collectRuntimeMetrics собирает метрики, связанные с работой приложения и сохраняет их в хранилище.
-func (a *agent) collectRuntimeMetrics() error {
-	// здесь логика сбора метрик и сохранения их в storage
-	// get runtime metrics
+func (a *agent) collectRuntimeMetrics() {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 
@@ -118,18 +99,14 @@ func (a *agent) collectRuntimeMetrics() error {
 
 	a.storage.AddGauge("RandomValue", rand.Float64())
 
-	return nil
-
 }
 
 // collectSystemMetrics собирает метрики, связанные с системными ресурсами и сохраняет их в хранилище.
-func (a *agent) collectSystemMetrics() error {
+func (a *agent) collectSystemMetrics() {
 	// здесь логика сбора метрик и сохранения их в storage
 	// get system metrics like random and counter
 
 	a.storage.AddCounter("PollCounter", 1)
-
-	return nil
 
 }
 
@@ -138,7 +115,7 @@ func (a *agent) Dump() error {
 	metrics := a.storage.GetAllMetrics()
 
 	if err := a.sender.SendMetrics(metrics); err != nil {
-		return errors.Wrap(err, "failed to send metrics")
+		return fmt.Errorf("cannot send metrics: %w", err)
 	}
 
 	return nil

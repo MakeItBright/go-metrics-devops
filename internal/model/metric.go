@@ -14,10 +14,10 @@ const (
 )
 
 type Metric struct {
-	Name  MetricName // имя метрики
-	Type  MetricType // параметр, принимающий значение gauge или counter
-	Delta int64      // значение метрики в случае передачи counter
-	Value float64    // значение метрики в случае передачи gauge
+	Name  MetricName `json:"id"`              // имя метрики
+	Type  MetricType `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta int64      `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value float64    `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 func (m *Metric) Validate() error {

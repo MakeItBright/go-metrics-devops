@@ -8,29 +8,27 @@ import (
 	"github.com/MakeItBright/go-metrics-devops/internal/server"
 )
 
-var (
-	flagRunAddr string // неэкспортированная переменная flagRunAddr содержит адрес и порт для запуска сервера
-)
-
-func init() {
-	// регистрируем переменную flagRunAddr
-	// как аргумент -a со значением localhost:8080 по умолчанию
-	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
-}
-
 func main() {
-	flag.Parse()
-	envParse()
+	cfg := server.Config{}
 
-	if err := server.Start(server.Config{
-		BindAddr: flagRunAddr,
-	}); err != nil {
-		log.Fatal(err)
+	flagParse(&cfg)
+	envParse(&cfg)
+
+	if err := server.Start(cfg); err != nil {
+		log.Fatalf("cannot start server: %s", err)
 	}
+
 }
 
-func envParse() {
+func flagParse(cfg *server.Config) {
+	flag.StringVar(&cfg.BindAddr, "a", "localhost:8080", "address and port to run server")
+	flag.Parse()
+
+}
+
+func envParse(cfg *server.Config) {
 	if envAddress, ok := os.LookupEnv("ADDRESS"); ok && envAddress != "" {
-		flagRunAddr = envAddress
+		cfg.BindAddr = envAddress
 	}
+
 }

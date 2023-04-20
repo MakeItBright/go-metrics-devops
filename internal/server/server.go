@@ -13,29 +13,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Server ...
 type server struct {
 	logger *logrus.Logger
 	router *chi.Mux
 	sm     storage.Storage
 }
 
-// Metric ...
-type Metric struct {
-	Name  string  `json:"id"`              // имя метрики
-	Type  string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
-
-// New ...
 func newServer(sm storage.Storage) *server {
 	s := &server{
 		logger: logrus.New(),
 		router: chi.NewRouter(),
 		sm:     sm,
 	}
-	s.configureRouter()
+
+	s.registerRouter()
 
 	return s
 }
@@ -46,7 +37,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Router return chi.Router for testing and actual work
-func (s *server) configureRouter() {
+func (s *server) registerRouter() {
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth)
@@ -61,19 +52,21 @@ func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) 
 	metricName := chi.URLParam(r, "metricName")
 	metricValue := chi.URLParam(r, "metricValue")
 
-	switch metricType {
-	case string(model.MetricTypeGauge):
+	switch model.MetricType(metricType) {
+	case model.MetricTypeGauge:
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
+			s.logger.Errorf("cannot parse gauge metric value: %s", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		s.sm.AddGauge(metricName, value)
 
-	case string(model.MetricTypeCounter):
+	case model.MetricTypeCounter:
 		delta, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
+			s.logger.Errorf("cannot parse counter metric value: %s", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -96,13 +89,18 @@ func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) 
 
 // handleGetAllMetrics  возвращающая все имеющиеся метрики и их значения в виде HTML-страницы
 func (s *server) handleGetAllMetrics(w http.ResponseWriter, r *http.Request) {
-	s.logger.Info("All Metrics")
 	tmpl, err := template.ParseFiles("templates/index.go.html")
 	if err != nil {
+		s.logger.Errorf("cannot parse template: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, s.sm.GetAllMetrics())
+
+	if err := tmpl.Execute(w, s.sm.GetAllMetrics()); err != nil {
+		s.logger.Errorf("cannot execute template: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleGetMetricво значение метрики
@@ -112,8 +110,8 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 
-	switch metricType {
-	case string(model.MetricTypeGauge):
+	switch model.MetricType(metricType) {
+	case model.MetricTypeGauge:
 		value, ok := s.sm.GetGauge(metricName)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -121,7 +119,7 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(fmt.Sprintf("%v", value)))
 
-	case string(model.MetricTypeCounter):
+	case model.MetricTypeCounter:
 		delta, ok := s.sm.GetCounter(metricName)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
