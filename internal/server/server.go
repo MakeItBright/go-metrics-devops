@@ -31,13 +31,14 @@ func newServer(sm storage.Storage) *server {
 	return s
 }
 
-// ServeHTTP
+// ServeHTTP реализует интерфейс http.Handler и обрабатывает HTTP-запросы
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
 // Router return chi.Router for testing and actual work
 func (s *server) registerRouter() {
+
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth)
