@@ -78,6 +78,15 @@ func (s *server) registerRouter() {
 
 }
 
+// handleJsonPostUpdateMetric
+func (s *server) handleJsonPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`Metric updated`))
+
+}
+
 // handlePostUpdateMetric
 func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
