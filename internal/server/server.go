@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
@@ -34,17 +35,47 @@ func newServer(sm storage.Storage) *server {
 // ServeHTTP реализует интерфейс http.Handler и обрабатывает HTTP-запросы
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
+
 }
 
 // Router return chi.Router for testing and actual work
 func (s *server) registerRouter() {
 
+	// Создание и конфигурирование логгера
+	logger := logrus.New()
+	logger.Formatter = &logrus.JSONFormatter{}
+	logger.Level = logrus.InfoLevel
+
+	// Middleware для логирования
+	s.router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+
+			// Создание обертки над ResponseWriter, чтобы сохранить данные о коде статуса и размере содержимого
+			rw := newResponseWriter(w)
+
+			// Выполнение запроса
+			next.ServeHTTP(rw, r)
+
+			// Запись лога
+			logger.WithFields(logrus.Fields{
+				"method":         r.Method,
+				"uri":            r.RequestURI,
+				"elapsed_ms":     time.Since(start).Microseconds(),
+				"status_code":    rw.statusCode,
+				"response_bytes": rw.contentLength,
+			}).Info("Request processed")
+		})
+	})
+
+	// s.router.Use(WithLogging)
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
 	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric)
 	s.router.Get("/value/{metricType}/{metricName}", s.handleGetMetric)
+
 }
 
 // handlePostUpdateMetric
@@ -102,6 +133,7 @@ func (s *server) handleGetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 }
 
 // handleGetMetricво значение метрики
