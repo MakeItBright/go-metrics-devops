@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -76,6 +76,8 @@ func (s *server) registerRouter() {
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
 	s.router.Post("/update", s.handleJsonPostUpdateMetric)
+	s.router.Post("/value", s.handleJsonPostGetMetric)
+
 	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric)
 	s.router.Get("/value/{metricType}/{metricName}", s.handleGetMetric)
 
@@ -86,7 +88,7 @@ func (s *server) handleJsonPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.logger.Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -218,6 +220,64 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write([]byte(fmt.Sprintf("%v", delta)))
 	default:
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+}
+
+// handleGetMetricво значение метрики
+func (s *server) handleJsonPostGetMetric(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var m model.Metric
+
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if m.Name == "" {
+		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch model.MetricType(m.Type) {
+	case model.MetricTypeGauge:
+		value, ok := s.sm.GetGauge(string(m.Name))
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		m.Value = value
+		// w.Write([]byte(fmt.Sprintf("%v", value)))
+
+	case model.MetricTypeCounter:
+		delta, ok := s.sm.GetCounter(string(m.Name))
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		m.Delta = delta
+		// w.Write([]byte(fmt.Sprintf("%v", delta)))
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(m); err != nil {
+		s.logger.Errorf("error: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
