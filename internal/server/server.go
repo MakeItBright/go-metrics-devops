@@ -75,66 +75,11 @@ func (s *server) registerRouter() {
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
-	s.router.Post("/update", s.handleJsonPostUpdateMetric)
-	s.router.Post("/value", s.handleJsonPostGetMetric)
+	s.router.Post("/update", s.handleJSONPostUpdateMetric)
+	s.router.Post("/value", s.handleJSONPostGetMetric)
 
 	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric)
 	s.router.Get("/value/{metricType}/{metricName}", s.handleGetMetric)
-
-}
-
-// handleJsonPostUpdateMetric
-func (s *server) handleJsonPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "application/json")
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.logger.Errorf("cannot parse counter metric value: %s", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	var m model.Metric
-
-	err = json.Unmarshal(body, &m)
-
-	if err != nil {
-		s.logger.Errorf("cannot parse metric: %s", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	switch model.MetricType(m.Type) {
-	case model.MetricTypeGauge:
-		// value, err := strconv.ParseFloat(m.Value, 64)
-		// if err != nil {
-		// 	s.logger.Errorf("cannot parse gauge metric value: %s", err)
-		// 	w.WriteHeader(http.StatusBadRequest)
-		// 	return
-		// }
-
-		s.sm.AddGauge(string(m.Name), m.Value)
-
-	case model.MetricTypeCounter:
-		// delta, err := strconv.ParseInt(m.Delta, 10, 64)
-		// if err != nil {
-		// 	s.logger.Errorf("cannot parse counter metric value: %s", err)
-		// 	w.WriteHeader(http.StatusBadRequest)
-		// 	return
-		// }
-
-		s.sm.AddCounter(string(m.Name), m.Delta)
-
-	default:
-
-		w.WriteHeader(http.StatusBadRequest)
-		return
-
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`Metric updated`))
 
 }
 
@@ -226,8 +171,68 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// handleJSONPostUpdateMetric
+func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var m model.Metric
+
+	err = json.Unmarshal(body, &m)
+	s.logger.Printf("req: %+v", m)
+	if err != nil {
+		s.logger.Errorf("cannot parse metric: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch model.MetricType(m.Type) {
+	case model.MetricTypeGauge:
+		// value, err := strconv.ParseFloat(m.Value, 64)
+		// if err != nil {
+		// 	s.logger.Errorf("cannot parse gauge metric value: %s", err)
+		// 	w.WriteHeader(http.StatusBadRequest)
+		// 	return
+		// }
+
+		s.sm.AddGauge(string(m.Name), m.Value)
+
+	case model.MetricTypeCounter:
+		// delta, err := strconv.ParseInt(m.Delta, 10, 64)
+		// if err != nil {
+		// 	s.logger.Errorf("cannot parse counter metric value: %s", err)
+		// 	w.WriteHeader(http.StatusBadRequest)
+		// 	return
+		// }
+
+		s.sm.AddCounter(string(m.Name), m.Delta)
+
+	default:
+
+		w.WriteHeader(http.StatusBadRequest)
+		return
+
+	}
+
+	if err := json.NewEncoder(w).Encode(m); err != nil {
+		s.logger.Errorf("error: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+}
+
 // handleGetMetricво значение метрики
-func (s *server) handleJsonPostGetMetric(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
