@@ -1,7 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -73,6 +75,7 @@ func (s *server) registerRouter() {
 	s.router.Use(middleware.StripSlashes)
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
+	s.router.Post("/update", s.handleJsonPostUpdateMetric)
 	s.router.Post("/update/{metricType}/{metricName}/{metricValue}", s.handlePostUpdateMetric)
 	s.router.Get("/value/{metricType}/{metricName}", s.handleGetMetric)
 
@@ -82,6 +85,52 @@ func (s *server) registerRouter() {
 func (s *server) handleJsonPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var m model.Metric
+
+	err = json.Unmarshal(body, &m)
+
+	if err != nil {
+		s.logger.Errorf("cannot parse metric: %s", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch model.MetricType(m.Type) {
+	case model.MetricTypeGauge:
+		// value, err := strconv.ParseFloat(m.Value, 64)
+		// if err != nil {
+		// 	s.logger.Errorf("cannot parse gauge metric value: %s", err)
+		// 	w.WriteHeader(http.StatusBadRequest)
+		// 	return
+		// }
+
+		s.sm.AddGauge(string(m.Name), m.Value)
+
+	case model.MetricTypeCounter:
+		// delta, err := strconv.ParseInt(m.Delta, 10, 64)
+		// if err != nil {
+		// 	s.logger.Errorf("cannot parse counter metric value: %s", err)
+		// 	w.WriteHeader(http.StatusBadRequest)
+		// 	return
+		// }
+
+		s.sm.AddCounter(string(m.Name), m.Delta)
+
+	default:
+
+		w.WriteHeader(http.StatusBadRequest)
+		return
+
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`Metric updated`))
 

@@ -52,7 +52,7 @@ func Start(cfg Config) error {
 		case <-reportTicker.C:
 			log.Printf("agent is running, sending requests to %v every %v seconds", cfg.Address, cfg.ReportInterval)
 			if err := a.Dump(); err != nil {
-				log.Printf("ERROR: cannot agennt dump: %s", err)
+				log.Printf("ERROR: cannot agent dump: %s", err)
 			}
 
 		}
