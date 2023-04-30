@@ -1,11 +1,11 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
@@ -19,59 +19,6 @@ func TestServer_HandleHealth(t *testing.T) {
 	s.ServeHTTP(rec, req)
 	assert.Equal(t, rec.Code, http.StatusOK)
 }
-func TestServer_handleJsonPostUpdateMetric(t *testing.T) {
-	s := newServer(storage.NewMemStorage())
-
-	testCases := []struct {
-		name      string
-		request   interface{}
-		expectErr bool
-	}{
-		{
-			name: "add_gauge_metric",
-			request: map[string]interface{}{
-				"type":  "gauge",
-				"name":  "metric_1",
-				"value": 42.0,
-			},
-			expectErr: false,
-		},
-		{
-			name: "add_counter_metric",
-			request: map[string]interface{}{
-				"type":  "counter",
-				"name":  "metric_2",
-				"delta": 1,
-			},
-			expectErr: false,
-		},
-		{
-			name: "invalid_request_body",
-			request: map[string]interface{}{
-				"type": "invalid",
-			},
-			expectErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			reqBody, _ := json.Marshal(tc.request)
-			req, err := http.NewRequest("POST", "/update", bytes.NewReader(reqBody))
-			assert.NoError(t, err)
-
-			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(s.handleJSONPostUpdateMetric)
-			handler.ServeHTTP(rr, req)
-
-			if tc.expectErr {
-				assert.NotEqual(t, rr.Code, http.StatusOK)
-			} else {
-				assert.Equal(t, rr.Code, http.StatusOK)
-			}
-		})
-	}
-}
 
 func Test_server_handlePostUpdateMetric(t *testing.T) {
 	s := newServer(storage.NewMemStorage())
@@ -81,10 +28,12 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 		body string
 	}
 	tests := []struct {
-		name   string
-		method string
-		args   string
-		want   want
+		name    string
+		method  string
+		args    string
+		useJSON bool
+		body    string
+		want    want
 	}{
 		// TODO: Add test cases.
 		{
@@ -123,16 +72,117 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 				body: "100501",
 			},
 		},
+		{
+			name:   "Get gauge",
+			method: "GET",
+			args:   "/value/gauge/Alloc",
+			want: want{
+				code: 200,
+				body: "2.128506e+06",
+			},
+		},
+		{
+			name:   "counter no name 1",
+			method: "POST",
+			args:   "/update/counter/",
+			want:   want{code: 404},
+		},
+		// {
+		// 	name:   "counter no name 2",
+		// 	method: "POST",
+		// 	args:   "/update/counter//100",
+		// 	want:   want{code: 404},
+		// },
+		{
+			name:   "bad type",
+			method: "POST",
+			args:   "/update/integer/x/1",
+			want:   want{code: 501},
+		},
+		// TODO add test for all metric
+		// {
+		// 	name:   "Get all",
+		// 	method: "GET",
+		// 	args:   "/",
+		// 	want: want{
+		// 		code: 200,
+		// 		// body: "",
+		// 	},
+		// },
+
+		{
+			name:    "update json counter",
+			method:  "POST",
+			args:    "/update/",
+			useJSON: true,
+			body:    `{"id":"xyz","type":"counter","delta":10}`,
+			want: want{
+				code: 200,
+				body: `{"id":"xyz","type":"counter","delta":10}`,
+			},
+		},
+		{
+			name:    "update json counter",
+			method:  "POST",
+			args:    "/update/",
+			useJSON: true,
+			body:    `{"id":"xyz","type":"counter","delta":10}`,
+			want: want{
+				code: 200,
+				body: `{"id":"xyz","type":"counter","delta":20}`,
+			},
+		},
+		{
+			name:    "get json counter",
+			method:  "POST",
+			args:    "/value/",
+			useJSON: true,
+			body:    `{"id":"xyz","type":"counter"}`,
+			want: want{
+				code: 200,
+				body: `{"id":"xyz","type":"counter","delta":20}`,
+			},
+		},
+
+		{
+			name:    "update json gauge",
+			method:  "POST",
+			args:    "/update/",
+			useJSON: true,
+			body:    `{"id":"xyz","type":"gauge","value":10}`,
+			want:    want{code: 200},
+		},
+		{
+			name:    "get json gauge",
+			method:  "POST",
+			args:    "/value/",
+			useJSON: true,
+			body:    `{"id":"xyz","type":"gauge"}`,
+			want: want{
+				code: 200,
+				body: `{"id":"xyz","type":"gauge","value":10}`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			rec := httptest.NewRecorder()
-			req, _ := http.NewRequest(tt.method, tt.args, nil)
+			r := strings.NewReader("")
+			if tt.useJSON {
+				r = strings.NewReader(tt.body)
+			}
+
+			req, _ := http.NewRequest(tt.method, tt.args, r)
+
+			if tt.useJSON {
+				req.Header.Add("Content-Type", "application/json")
+			}
 			s.ServeHTTP(rec, req)
 			assert.Equal(t, tt.want.code, rec.Code)
 
 			respBody, _ := io.ReadAll(rec.Body)
+			fmt.Printf("out %+v", string(respBody))
 			assert.Contains(t, string(respBody), tt.want.body)
 			// for _, s := range tt.want.body {
 
