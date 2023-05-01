@@ -168,6 +168,7 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			rec := httptest.NewRecorder()
+
 			r := strings.NewReader("")
 			if tt.useJSON {
 				r = strings.NewReader(tt.body)

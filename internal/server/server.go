@@ -173,7 +173,7 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 
 // handleJSONPostUpdateMetric
 func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
-	s.logger.Info("||| ==================================================== ||||")
+	s.logger.Info("||| ================= POST Update ======================== ||||")
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -231,25 +231,19 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		return
 
 	}
-
-	if err := json.NewEncoder(w).Encode(m); err != nil {
-		s.logger.Errorf("error: %s", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(m); err != nil {
 		s.logger.Errorf("error: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 }
 
 // handleGetMetricво значение метрики
 func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
+	s.logger.Info("||| ================= POST Value ======================== ||||")
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
