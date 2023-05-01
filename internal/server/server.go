@@ -255,6 +255,8 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 	var m model.Metric
 
 	err = json.Unmarshal(body, &m)
+	s.logger.Info(m)
+	s.logger.Info(err)
 	if err != nil {
 		s.logger.Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)

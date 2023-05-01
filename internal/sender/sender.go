@@ -33,12 +33,14 @@ func (s *Sender) SendMetrics(metrics []model.Metric) error {
 
 		// url := fmt.Sprintf("%s/update/%s/%s/%s", s.url, value.Type, value.Name, value.GetValue())
 		url := fmt.Sprintf("%s/update", s.url)
-		_, err := client.R().SetHeader("Content-Type", "application/json").SetBody(value).Post(url)
+		resp, err := client.R().SetHeader("Content-Type", "application/json").SetBody(value).Post(url)
 		fmt.Println(value)
+		fmt.Println(resp)
 		if err != nil {
 			return fmt.Errorf("cannot perform POST request: %w", err)
 		}
 
 	}
+
 	return nil
 }
