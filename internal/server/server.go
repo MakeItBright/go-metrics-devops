@@ -187,7 +187,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 	var m model.Metric
 
 	err = json.Unmarshal(body, &m)
-	s.logger.Printf("body to m: %+v", m)
+
 	if err != nil {
 		s.logger.Errorf("cannot parse metric: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -203,7 +203,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		// 	return
 		// }
 
-		s.sm.AddGauge(string(m.Name), m.Value)
+		s.sm.AddGauge(string(m.Name), &m.Value)
 		value, ok := s.sm.GetGauge(string(m.Name))
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -237,6 +237,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	s.logger.Infof("answer: %+v", m)
 
 }
 
@@ -256,7 +257,6 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 
 	err = json.Unmarshal(body, &m)
 	s.logger.Info(m)
-	s.logger.Info(err)
 	if err != nil {
 		s.logger.Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -268,6 +268,8 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	s.logger.Infof("FIND type: %v, id: %v", m.Type, m.Name)
 
 	switch model.MetricType(m.Type) {
 	case model.MetricTypeGauge:
@@ -297,5 +299,6 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	s.logger.Infof("answer: %+v", m)
 
 }
