@@ -203,7 +203,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		// 	return
 		// }
 
-		s.sm.AddGauge(string(m.Name), &m.Value)
+		s.sm.AddGauge(string(m.Name), m.Value)
 		value, ok := s.sm.GetGauge(string(m.Name))
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
