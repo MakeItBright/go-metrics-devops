@@ -184,6 +184,12 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		s.logger.Info("wrong content type")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	var m model.Metric
 
 	err = json.Unmarshal(body, &m)
@@ -231,13 +237,13 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		return
 
 	}
+	s.logger.Infof("answer: %+v", m)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(m); err != nil {
 		s.logger.Errorf("error: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	s.logger.Infof("answer: %+v", m)
 
 }
 

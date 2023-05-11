@@ -98,6 +98,8 @@ func (a *agent) collectRuntimeMetrics() {
 	a.storage.AddGauge("NextGC", float64(mem.NextGC))
 
 	a.storage.AddGauge("RandomValue", rand.Float64())
+	// TODO remove this hacks
+	runtime.GC()
 
 }
 

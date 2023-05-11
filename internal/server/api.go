@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
@@ -13,8 +12,7 @@ func Start(cfg Config) error {
 
 	srv := newServer(s)
 
-	fmt.Println("Running server on", cfg.BindAddr)
-
+	// logger.Log.Info("Running server", cfg.BindAddr)
 	return http.ListenAndServe(cfg.BindAddr, srv)
 
 }
