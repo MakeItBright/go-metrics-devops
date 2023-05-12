@@ -68,8 +68,9 @@ func (a *agent) CollectMetrics() {
 
 // collectRuntimeMetrics собирает метрики, связанные с работой приложения и сохраняет их в хранилище.
 func (a *agent) collectRuntimeMetrics() {
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
+	// var mem runtime.MemStats
+	mem := new(runtime.MemStats)
+	runtime.ReadMemStats(mem)
 
 	// memory metrics
 	a.storage.AddGauge("Alloc", float64(mem.Alloc))
