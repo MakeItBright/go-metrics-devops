@@ -3,6 +3,7 @@ package agent
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"runtime"
 	"time"
@@ -76,7 +77,7 @@ func (a *agent) collectRuntimeMetrics() {
 	a.storage.AddGauge("Alloc", float64(mem.Alloc))
 	a.storage.AddGauge("TotalAlloc", float64(mem.TotalAlloc))
 	a.storage.AddGauge("Sys", float64(mem.Sys))
-	a.storage.AddGauge("Lookups", float64(mem.Lookups))
+	a.storage.AddGauge("Lookups", math.Max(float64(mem.Lookups), 1))
 	a.storage.AddGauge("Mallocs", float64(mem.Mallocs))
 	a.storage.AddGauge("Frees", float64(mem.Frees))
 
@@ -97,10 +98,10 @@ func (a *agent) collectRuntimeMetrics() {
 	a.storage.AddGauge("PauseTotalNs", float64(mem.PauseTotalNs))
 	a.storage.AddGauge("LastGC", float64(mem.LastGC))
 	a.storage.AddGauge("NextGC", float64(mem.NextGC))
-
-	a.storage.AddGauge("RandomValue", rand.Float64())
 	// TODO remove this hacks
 	runtime.GC()
+
+	a.storage.AddGauge("RandomValue", rand.Float64())
 
 }
 
