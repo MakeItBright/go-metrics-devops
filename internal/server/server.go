@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"text/template"
 
+	mw "github.com/MakeItBright/go-metrics-devops/internal/middleware"
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 	"github.com/go-chi/chi"
@@ -72,6 +73,7 @@ func (s *server) registerRouter() {
 	// s.router.Use(WithLogging)
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.StripSlashes)
+	s.router.Use(mw.GZipHandle)
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
 
