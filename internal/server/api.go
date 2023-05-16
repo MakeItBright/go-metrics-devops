@@ -1,10 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/MakeItBright/go-metrics-devops/internal/logger"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
+	"go.uber.org/zap"
 )
 
 // Start запуск сервера с переданной конфигурацией.
@@ -13,8 +14,7 @@ func Start(cfg Config) error {
 
 	srv := newServer(s)
 
-	fmt.Println("Running server on", cfg.BindAddr)
-
+	logger.Log.Info("Running server", zap.String("address", cfg.BindAddr))
 	return http.ListenAndServe(cfg.BindAddr, srv)
 
 }
