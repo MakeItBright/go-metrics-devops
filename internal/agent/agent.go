@@ -123,6 +123,7 @@ func (a *agent) collectSystemMetrics() {
 	// get system metrics like random and counter
 
 	a.storage.AddCounter("PollCounter", 1)
+	a.storage.AddCounter("PollCount", 1)
 
 }
 
