@@ -134,7 +134,8 @@ func (s *server) handleGetAllMetrics(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	if err := tmpl.Execute(w, s.sm.GetAllMetrics()); err != nil {
 		s.logger.Errorf("cannot execute template: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
