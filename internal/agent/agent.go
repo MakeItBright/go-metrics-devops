@@ -98,6 +98,18 @@ func (a *agent) collectRuntimeMetrics() {
 	a.storage.AddGauge("PauseTotalNs", float64(mem.PauseTotalNs))
 	a.storage.AddGauge("LastGC", float64(mem.LastGC))
 	a.storage.AddGauge("NextGC", float64(mem.NextGC))
+
+	a.storage.AddGauge("BuckHashSys", float64(mem.BuckHashSys))
+	a.storage.AddGauge("GCCPUFraction", float64(mem.GCCPUFraction))
+	a.storage.AddGauge("GCSys", float64(mem.GCSys))
+
+	a.storage.AddGauge("MCacheInuse", float64(mem.MCacheInuse))
+	a.storage.AddGauge("MCacheSys", float64(mem.MCacheSys))
+	a.storage.AddGauge("MSpanInuse", float64(mem.MSpanInuse))
+	a.storage.AddGauge("MSpanSys", float64(mem.MSpanSys))
+	a.storage.AddGauge("NumForcedGC", float64(mem.NumForcedGC))
+	a.storage.AddGauge("OtherSys", float64(mem.OtherSys))
+
 	// TODO remove this hacks
 	runtime.GC()
 
