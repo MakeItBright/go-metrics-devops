@@ -3,6 +3,7 @@ package agent
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"runtime"
 	"time"
@@ -52,7 +53,7 @@ func Start(cfg Config) error {
 		case <-reportTicker.C:
 			log.Printf("agent is running, sending requests to %v every %v seconds", cfg.Address, cfg.ReportInterval)
 			if err := a.Dump(); err != nil {
-				log.Printf("ERROR: cannot agennt dump: %s", err)
+				log.Printf("ERROR: cannot agent dump: %s", err)
 			}
 
 		}
@@ -68,14 +69,15 @@ func (a *agent) CollectMetrics() {
 
 // collectRuntimeMetrics собирает метрики, связанные с работой приложения и сохраняет их в хранилище.
 func (a *agent) collectRuntimeMetrics() {
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
+	// var mem runtime.MemStats
+	mem := new(runtime.MemStats)
+	runtime.ReadMemStats(mem)
 
 	// memory metrics
 	a.storage.AddGauge("Alloc", float64(mem.Alloc))
 	a.storage.AddGauge("TotalAlloc", float64(mem.TotalAlloc))
 	a.storage.AddGauge("Sys", float64(mem.Sys))
-	a.storage.AddGauge("Lookups", float64(mem.Lookups))
+	a.storage.AddGauge("Lookups", math.Max(float64(mem.Lookups), 1))
 	a.storage.AddGauge("Mallocs", float64(mem.Mallocs))
 	a.storage.AddGauge("Frees", float64(mem.Frees))
 
@@ -97,6 +99,20 @@ func (a *agent) collectRuntimeMetrics() {
 	a.storage.AddGauge("LastGC", float64(mem.LastGC))
 	a.storage.AddGauge("NextGC", float64(mem.NextGC))
 
+	a.storage.AddGauge("BuckHashSys", float64(mem.BuckHashSys))
+	a.storage.AddGauge("GCCPUFraction", float64(mem.GCCPUFraction))
+	a.storage.AddGauge("GCSys", float64(mem.GCSys))
+
+	a.storage.AddGauge("MCacheInuse", float64(mem.MCacheInuse))
+	a.storage.AddGauge("MCacheSys", float64(mem.MCacheSys))
+	a.storage.AddGauge("MSpanInuse", float64(mem.MSpanInuse))
+	a.storage.AddGauge("MSpanSys", float64(mem.MSpanSys))
+	a.storage.AddGauge("NumForcedGC", float64(mem.NumForcedGC))
+	a.storage.AddGauge("OtherSys", float64(mem.OtherSys))
+
+	// TODO remove this hacks
+	runtime.GC()
+
 	a.storage.AddGauge("RandomValue", rand.Float64())
 
 }
@@ -107,6 +123,7 @@ func (a *agent) collectSystemMetrics() {
 	// get system metrics like random and counter
 
 	a.storage.AddCounter("PollCounter", 1)
+	a.storage.AddCounter("PollCount", 1)
 
 }
 

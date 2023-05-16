@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/MakeItBright/go-metrics-devops/internal/logger"
 	"github.com/MakeItBright/go-metrics-devops/internal/server"
 )
 
@@ -13,6 +14,10 @@ func main() {
 
 	flagParse(&cfg)
 	envParse(&cfg)
+
+	if err := logger.Initialize("info"); err != nil {
+		log.Fatalf("cannot start server: %s", err)
+	}
 
 	if err := server.Start(cfg); err != nil {
 		log.Fatalf("cannot start server: %s", err)
