@@ -58,6 +58,7 @@ func NewConsumer(fileName string) (*consumer, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &consumer{
 		file:    file,
 		decoder: json.NewDecoder(file),
@@ -68,6 +69,7 @@ func NewConsumer(fileName string) (*consumer, error) {
 // Возвращает срез метрик и ошибку, если возникла.
 func (c *consumer) ReadMetrics() ([]model.Metric, error) {
 	metrics := []model.Metric{}
+
 	if err := c.decoder.Decode(&metrics); err != nil {
 		if !errors.Is(err, io.EOF) {
 			return nil, err

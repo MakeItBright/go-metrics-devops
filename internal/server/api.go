@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/logger"
+	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 	"go.uber.org/zap"
 )
@@ -25,7 +26,7 @@ func Start(cfg Config) error {
 	if err != nil {
 		logger.Log.Error("error", zap.Error(err))
 	}
-
+	logger.Log.Info("", zap.Any("FileStoragePath", cfg.FileStoragePath))
 	if cfg.Restore {
 		metricsFromFile, err := consumer.ReadMetrics()
 		if err != nil {
@@ -34,7 +35,19 @@ func Start(cfg Config) error {
 
 		logger.Log.Info("", zap.Any("metrics", metricsFromFile))
 		//TODO
+
 		// s.UpdateAll(metricsFromFile)
+		for _, metricValue := range metricsFromFile {
+			switch model.MetricType(metricValue.Type) {
+			case model.MetricTypeGauge:
+				s.AddGauge(string(metricValue.Name), metricValue.Value)
+			case model.MetricTypeCounter:
+				s.AddCounter(string(metricValue.Name), metricValue.Delta)
+			default:
+				logger.Log.Error("Не смогли прочитать метрики")
+			}
+
+		}
 
 	}
 
@@ -52,13 +65,13 @@ func Start(cfg Config) error {
 			case <-storeIntervalTicker.C:
 				logger.Log.Info("Read and Write metrics")
 				metrics := s.GetAllMetrics()
-
+				logger.Log.Info("", zap.Any("metrics", metrics))
 				producer.WriteMetrics(metrics)
 			case <-osSigChan:
 				logger.Log.Info("Read and Write metrics End")
-				metrics := s.GetAllMetrics()
+				// metrics := s.GetAllMetrics()
 
-				producer.WriteMetrics(metrics)
+				// producer.WriteMetrics(metrics)
 				os.Exit(0)
 			}
 		}
