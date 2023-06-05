@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"text/template"
 
+	log "github.com/MakeItBright/go-metrics-devops/internal/logger"
 	mw "github.com/MakeItBright/go-metrics-devops/internal/middleware"
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
@@ -43,35 +44,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Router return chi.Router for testing and actual work
 func (s *server) registerRouter() {
 
-	// Создание и конфигурирование логгера
-	logger := logrus.New()
-	logger.Formatter = &logrus.JSONFormatter{}
-	logger.Level = logrus.InfoLevel
-
-	// Middleware для логирования
-	// s.router.Use(func(next http.Handler) http.Handler {
-	// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 		start := time.Now()
-
-	// 		// Создание обертки над ResponseWriter, чтобы сохранить данные о коде статуса и размере содержимого
-	// 		rw := newResponseWriter(w)
-
-	// 		// Выполнение запроса
-	// 		next.ServeHTTP(rw, r)
-
-	// 		// Запись лога
-	// 		logger.WithFields(logrus.Fields{
-	// 			"method":         r.Method,
-	// 			"uri":            r.RequestURI,
-	// 			"elapsed_ms":     time.Since(start).Microseconds(),
-	// 			"status_code":    rw.statusCode,
-	// 			"response_bytes": rw.contentLength,
-	// 		}).Info("Request processed")
-	// 	})
-	// })
-
-	// s.router.Use(WithLogging)
-	s.router.Use(middleware.Logger)
+	s.router.Use(log.RequestLogger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Use(mw.GZipHandle)
 	s.router.Get("/health", s.handleHealth)
@@ -176,7 +149,7 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 
 // handleJSONPostUpdateMetric
 func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
-	s.logger.Info("||| ================= POST Update ======================== ||||")
+
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -253,7 +226,6 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 // handleGetMetricво значение метрики
 func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	s.logger.Info("||| ================= POST Value ======================== ||||")
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
