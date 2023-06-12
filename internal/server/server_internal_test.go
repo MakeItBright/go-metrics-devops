@@ -87,29 +87,12 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 			args:   "/update/counter/",
 			want:   want{code: 404},
 		},
-		// {
-		// 	name:   "counter no name 2",
-		// 	method: "POST",
-		// 	args:   "/update/counter//100",
-		// 	want:   want{code: 404},
-		// },
 		{
 			name:   "bad type",
 			method: "POST",
 			args:   "/update/integer/x/1",
 			want:   want{code: 501},
 		},
-		// TODO add test for all metric
-		// {
-		// 	name:   "Get all",
-		// 	method: "GET",
-		// 	args:   "/",
-		// 	want: want{
-		// 		code: 200,
-		// 		// body: "",
-		// 	},
-		// },
-
 		{
 			name:    "update json counter",
 			method:  "POST",
@@ -185,9 +168,7 @@ func Test_server_handlePostUpdateMetric(t *testing.T) {
 			respBody, _ := io.ReadAll(rec.Body)
 			fmt.Printf("out %+v", string(respBody))
 			assert.Contains(t, string(respBody), tt.want.body)
-			// for _, s := range tt.want.body {
 
-			// }
 		})
 	}
 }

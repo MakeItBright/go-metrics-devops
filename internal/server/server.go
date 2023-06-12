@@ -178,13 +178,6 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 
 	switch model.MetricType(m.Type) {
 	case model.MetricTypeGauge:
-		// value, err := strconv.ParseFloat(m.Value, 64)
-		// if err != nil {
-		// 	s.logger.Errorf("cannot parse gauge metric value: %s", err)
-		// 	w.WriteHeader(http.StatusBadRequest)
-		// 	return
-		// }
-
 		s.sm.AddGauge(string(m.Name), m.Value)
 		value, ok := s.sm.GetGauge(string(m.Name))
 		if !ok {
@@ -192,14 +185,8 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		m.Value = value
-	case model.MetricTypeCounter:
-		// delta, err := strconv.ParseInt(m.Delta, 10, 64)
-		// if err != nil {
-		// 	s.logger.Errorf("cannot parse counter metric value: %s", err)
-		// 	w.WriteHeader(http.StatusBadRequest)
-		// 	return
-		// }
 
+	case model.MetricTypeCounter:
 		s.sm.AddCounter(string(m.Name), m.Delta)
 		delta, ok := s.sm.GetCounter(string(m.Name))
 		if !ok {
@@ -207,23 +194,23 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		m.Delta = delta
+
 	default:
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
 
 	}
-	s.logger.Infof("answer: %+v", m)
+
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(m); err != nil {
-		s.logger.Errorf("error: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 }
 
-// handleGetMetricво значение метрики
+// handleGetMetric
 func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
@@ -237,7 +224,6 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 	var m model.Metric
 
 	err = json.Unmarshal(body, &m)
-	s.logger.Info(m)
 	if err != nil {
 		s.logger.Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -250,8 +236,6 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.logger.Infof("FIND type: %v, id: %v", m.Type, m.Name)
-
 	switch model.MetricType(m.Type) {
 	case model.MetricTypeGauge:
 		value, ok := s.sm.GetGauge(string(m.Name))
@@ -260,7 +244,6 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		m.Value = value
-		// w.Write([]byte(fmt.Sprintf("%v", value)))
 
 	case model.MetricTypeCounter:
 		delta, ok := s.sm.GetCounter(string(m.Name))
@@ -269,17 +252,15 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		m.Delta = delta
-		// w.Write([]byte(fmt.Sprintf("%v", delta)))
+
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(m); err != nil {
-		s.logger.Errorf("error: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	s.logger.Infof("answer: %+v", m)
 
 }

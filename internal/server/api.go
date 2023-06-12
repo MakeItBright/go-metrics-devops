@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,19 +25,14 @@ func Start(cfg Config) error {
 
 	consumer, err := storage.NewConsumer(cfg.FileStoragePath)
 	if err != nil {
-		logger.Log.Error("error", zap.Error(err))
+		return fmt.Errorf("cannot create consumer: %w", err)
 	}
-	logger.Log.Info("", zap.Any("FileStoragePath", cfg.FileStoragePath))
 	if cfg.Restore {
 		metricsFromFile, err := consumer.ReadMetrics()
 		if err != nil {
-			logger.Log.Error("Не смогли прочитать метрики")
+			return fmt.Errorf("cannot read metrics: %w", err)
 		}
 
-		logger.Log.Info("", zap.Any("metrics", metricsFromFile))
-		//TODO
-
-		// s.UpdateAll(metricsFromFile)
 		for _, metricValue := range metricsFromFile {
 			switch model.MetricType(metricValue.Type) {
 			case model.MetricTypeGauge:
@@ -44,7 +40,7 @@ func Start(cfg Config) error {
 			case model.MetricTypeCounter:
 				s.AddCounter(string(metricValue.Name), metricValue.Delta)
 			default:
-				logger.Log.Error("Не смогли прочитать метрики")
+				return fmt.Errorf("cannot read metrics: %w", err)
 			}
 
 		}
@@ -53,7 +49,7 @@ func Start(cfg Config) error {
 
 	producer, err := storage.NewProducer(cfg.FileStoragePath)
 	if err != nil {
-		logger.Log.Error("Не смогли инициализировать продюсера")
+		return fmt.Errorf("cannot init producer: %w", err)
 	}
 
 	storeIntervalTicker := time.NewTicker(time.Duration(cfg.StoreInterval) * time.Second)
@@ -63,15 +59,10 @@ func Start(cfg Config) error {
 		for {
 			select {
 			case <-storeIntervalTicker.C:
-				logger.Log.Info("Read and Write metrics")
 				metrics := s.GetAllMetrics()
-				logger.Log.Info("", zap.Any("metrics", metrics))
 				producer.WriteMetrics(metrics)
 			case <-osSigChan:
-				logger.Log.Info("Read and Write metrics End")
-				// metrics := s.GetAllMetrics()
 
-				// producer.WriteMetrics(metrics)
 				os.Exit(0)
 			}
 		}

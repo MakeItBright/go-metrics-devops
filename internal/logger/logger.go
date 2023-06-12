@@ -52,14 +52,14 @@ func RequestLogger(h http.Handler) http.Handler {
 		Log.Info("got incoming HTTP request",
 			zap.String("uri", r.RequestURI),
 			zap.String("method", r.Method),
+			zap.Any("from", r.RemoteAddr),
 			zap.Int("status", rd.status),
 			zap.String("duration", duration.Round(time.Microsecond).String()),
 			zap.Int("size", rd.size),
 			zap.Any("request headers", r.Header),
 			zap.Any("request body", r.Body),
 			zap.Any("responce headers", w.Header()),
-			// r.Proto
-			// r.RemoteAddr
+			//
 		)
 
 		w.Header().Set("content-type", "Content-Type: application/json")
