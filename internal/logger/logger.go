@@ -21,6 +21,7 @@ func Initialize(level string) error {
 	}
 	// создаём новую конфигурацию логера
 	cfg := zap.NewProductionConfig()
+
 	// устанавливаем уровень
 	cfg.Level = lvl
 	// создаём логер на основе конфигурации
@@ -28,6 +29,7 @@ func Initialize(level string) error {
 	if err != nil {
 		return err
 	}
+
 	// устанавливаем синглтон
 	Log = zl
 	return nil

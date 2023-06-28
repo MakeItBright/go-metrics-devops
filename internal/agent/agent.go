@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/MakeItBright/go-metrics-devops/internal/logger"
 	"github.com/MakeItBright/go-metrics-devops/internal/sender"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 )
@@ -47,11 +48,11 @@ func Start(cfg Config) error {
 
 		select {
 		case <-pollTicker.C:
-			log.Printf("agent is running, collect metrics every %v seconds", cfg.PollInterval)
+			logger.Log.Sugar().Infof("agent is running, collect metrics every %v seconds", cfg.PollInterval)
 			a.CollectMetrics()
 
 		case <-reportTicker.C:
-			log.Printf("agent is running, sending requests to %v every %v seconds", cfg.Address, cfg.ReportInterval)
+			logger.Log.Sugar().Infof("agent is running, sending requests to %v every %v seconds", cfg.Address, cfg.ReportInterval)
 			if err := a.Dump(); err != nil {
 				log.Printf("ERROR: cannot agent dump: %s", err)
 			}
@@ -119,8 +120,6 @@ func (a *agent) collectRuntimeMetrics() {
 
 // collectSystemMetrics собирает метрики, связанные с системными ресурсами и сохраняет их в хранилище.
 func (a *agent) collectSystemMetrics() {
-	// здесь логика сбора метрик и сохранения их в storage
-	// get system metrics like random and counter
 
 	a.storage.AddCounter("PollCounter", 1)
 	a.storage.AddCounter("PollCount", 1)

@@ -27,6 +27,7 @@ func Start(cfg Config) error {
 	if err != nil {
 		return fmt.Errorf("cannot create consumer: %w", err)
 	}
+
 	if cfg.Restore {
 		metricsFromFile, err := consumer.ReadMetrics()
 		if err != nil {

@@ -8,24 +8,21 @@ import (
 	"strconv"
 	"text/template"
 
-	log "github.com/MakeItBright/go-metrics-devops/internal/logger"
+	logger "github.com/MakeItBright/go-metrics-devops/internal/logger"
 	mw "github.com/MakeItBright/go-metrics-devops/internal/middleware"
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 	"github.com/MakeItBright/go-metrics-devops/internal/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/sirupsen/logrus"
 )
 
 type server struct {
-	logger *logrus.Logger
 	router *chi.Mux
 	sm     storage.Storage
 }
 
 func newServer(sm storage.Storage) *server {
 	s := &server{
-		logger: logrus.New(),
 		router: chi.NewRouter(),
 		sm:     sm,
 	}
@@ -44,7 +41,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Router return chi.Router for testing and actual work
 func (s *server) registerRouter() {
 
-	s.router.Use(log.RequestLogger)
+	s.router.Use(logger.RequestLogger)
 	s.router.Use(middleware.StripSlashes)
 	s.router.Use(mw.GZipHandle)
 	s.router.Get("/health", s.handleHealth)
@@ -68,7 +65,7 @@ func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) 
 	case model.MetricTypeGauge:
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
-			s.logger.Errorf("cannot parse gauge metric value: %s", err)
+			logger.Log.Sugar().Errorf("cannot parse gauge metric value: %s", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -78,7 +75,7 @@ func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) 
 	case model.MetricTypeCounter:
 		delta, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			s.logger.Errorf("cannot parse counter metric value: %s", err)
+			logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -103,14 +100,14 @@ func (s *server) handlePostUpdateMetric(w http.ResponseWriter, r *http.Request) 
 func (s *server) handleGetAllMetrics(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("templates/index.go.html")
 	if err != nil {
-		s.logger.Errorf("cannot parse template: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse template: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	if err := tmpl.Execute(w, s.sm.GetAllMetrics()); err != nil {
-		s.logger.Errorf("cannot execute template: %s", err)
+		logger.Log.Sugar().Errorf("cannot execute template: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -155,13 +152,13 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if r.Header.Get("Content-Type") != "application/json" {
-		s.logger.Info("wrong content type")
+		logger.Log.Sugar().Info("wrong content type")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -171,7 +168,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 	err = json.Unmarshal(body, &m)
 
 	if err != nil {
-		s.logger.Errorf("cannot parse metric: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse metric: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -216,7 +213,7 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -225,13 +222,13 @@ func (s *server) handleJSONPostGetMetric(w http.ResponseWriter, r *http.Request)
 
 	err = json.Unmarshal(body, &m)
 	if err != nil {
-		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if m.Name == "" {
-		s.logger.Errorf("cannot parse counter metric value: %s", err)
+		logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

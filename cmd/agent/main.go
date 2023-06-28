@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/MakeItBright/go-metrics-devops/internal/agent"
+	"github.com/MakeItBright/go-metrics-devops/internal/logger"
 )
 
 const (
@@ -28,6 +29,10 @@ func main() {
 	flagParse(&cfg)
 	if err := envParse(&cfg); err != nil {
 		log.Fatalf("cannot parse ENV variables: %s", err)
+	}
+
+	if err := logger.Initialize("info"); err != nil {
+		log.Fatalf("cannot start server: %s", err)
 	}
 
 	if err := agent.Start(cfg); err != nil {
