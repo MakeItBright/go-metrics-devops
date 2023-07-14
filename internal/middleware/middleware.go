@@ -41,27 +41,27 @@ func GZipHandle(next http.Handler) http.Handler {
 		// Проверяем типы контента, для которых применяется сжатие
 		contentType := r.Header.Get("Content-Type")
 		fmt.Println(contentType)
-		if strings.HasPrefix(contentType, "application/json") || strings.HasPrefix(contentType, "text/html") {
-			// создаём gzip.Writer поверх текущего w
-			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-			if err != nil {
-				io.WriteString(w, err.Error())
-				return
-			}
-			defer gz.Close()
-
-			w.Header().Set("Content-Encoding", "gzip")
-			// w.Header().Del("Content-Length")          // Удаляем Content-Length, т.к. размер изменится при сжатии
-			// w.Header().Set("Vary", "Accept-Encoding") // Указываем, что ответ может варьироваться по Accept-Encoding
-
-			// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-
-		} else {
-			// Если тип контента не соответствует, передаем управление
-			// дальше без изменений
-			next.ServeHTTP(w, r)
+		// if strings.HasPrefix(contentType, "application/json") || strings.HasPrefix(contentType, "text/html") {
+		// создаём gzip.Writer поверх текущего w
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
 		}
+		defer gz.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		// w.Header().Del("Content-Length")          // Удаляем Content-Length, т.к. размер изменится при сжатии
+		// w.Header().Set("Vary", "Accept-Encoding") // Указываем, что ответ может варьироваться по Accept-Encoding
+
+		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+
+		// } else {
+		// 	// Если тип контента не соответствует, передаем управление
+		// 	// дальше без изменений
+		// 	next.ServeHTTP(w, r)
+		// }
 
 	})
 }
