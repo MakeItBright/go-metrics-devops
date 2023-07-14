@@ -20,7 +20,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 func GZipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// проверяем что запрос пришел сжатый
-		if r.Header.Get(`Content-Encoding`) == `gzip` {
+		if r.Header.Get("Content-Encoding") == "gzip" {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -37,17 +37,29 @@ func GZipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		// Проверяем типы контента, для которых применяется сжатие
+		contentType := r.Header.Get("Content-Type")
+		if strings.HasPrefix(contentType, "application/json") || strings.HasPrefix(contentType, "text/html") {
+			// создаём gzip.Writer поверх текущего w
+			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+			if err != nil {
+				io.WriteString(w, err.Error())
+				return
+			}
+			defer gz.Close()
 
-		// создаём gzip.Writer поверх текущего w
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Del("Content-Length")          // Удаляем Content-Length, т.к. размер изменится при сжатии
+			w.Header().Set("Vary", "Accept-Encoding") // Указываем, что ответ может варьироваться по Accept-Encoding
+
+			// передаём обработчику страницы переменную типа gzipWriter для вывода данных
+			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+
+		} else {
+			// Если тип контента не соответствует, передаем управление
+			// дальше без изменений
+			next.ServeHTTP(w, r)
 		}
-		defer gz.Close()
 
-		w.Header().Set("Content-Encoding", "gzip")
-		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 	})
 }

@@ -23,13 +23,13 @@ func Start(cfg Config) error {
 
 	srv := newServer(s)
 
-	consumer, err := storage.NewConsumer(cfg.FileStoragePath)
+	reader, err := storage.NewReader(cfg.FileStoragePath)
 	if err != nil {
-		return fmt.Errorf("cannot create consumer: %w", err)
+		return fmt.Errorf("cannot create reader: %w", err)
 	}
 
 	if cfg.Restore {
-		metricsFromFile, err := consumer.ReadMetrics()
+		metricsFromFile, err := reader.ReadMetrics()
 		if err != nil {
 			return fmt.Errorf("cannot read metrics: %w", err)
 		}
@@ -48,9 +48,9 @@ func Start(cfg Config) error {
 
 	}
 
-	producer, err := storage.NewProducer(cfg.FileStoragePath)
+	writer, err := storage.NewWriter(cfg.FileStoragePath)
 	if err != nil {
-		return fmt.Errorf("cannot init producer: %w", err)
+		return fmt.Errorf("cannot init writer: %w", err)
 	}
 
 	storeIntervalTicker := time.NewTicker(time.Duration(cfg.StoreInterval) * time.Second)
@@ -61,7 +61,7 @@ func Start(cfg Config) error {
 			select {
 			case <-storeIntervalTicker.C:
 				metrics := s.GetAllMetrics()
-				producer.WriteMetrics(metrics)
+				writer.WriteMetrics(metrics)
 			case <-osSigChan:
 
 				os.Exit(0)

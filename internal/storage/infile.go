@@ -9,21 +9,21 @@ import (
 	"github.com/MakeItBright/go-metrics-devops/internal/model"
 )
 
-// Producer представляет собой поставщик метрик.
-type Producer struct {
+// Writer представляет собой поставщик метрик.
+type Writer struct {
 	file    *os.File
 	encoder *json.Encoder
 }
 
-// NewProducer создает новый экземпляр Producer и инициализирует его.
+// NewWriter создает новый экземпляр Writer и инициализирует его.
 // Принимает fileName - имя файла, в который будут сохраняться метрики.
-// Возвращает указатель на созданный Producer и ошибку, если возникла.
-func NewProducer(fileName string) (*Producer, error) {
+// Возвращает указатель на созданный Writer и ошибку, если возникла.
+func NewWriter(fileName string) (*Writer, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
-	return &Producer{
+	return &Writer{
 		file:    file,
 		encoder: json.NewEncoder(file),
 	}, nil
@@ -31,7 +31,7 @@ func NewProducer(fileName string) (*Producer, error) {
 
 // WriteMetrics записывает переданные метрики в файл.
 // Принимает metrics - срез метрик для записи.
-func (p *Producer) WriteMetrics(metrics []model.Metric) error {
+func (p *Writer) WriteMetrics(metrics []model.Metric) error {
 	if metrics != nil {
 		return p.encoder.Encode(metrics)
 	}
@@ -40,26 +40,26 @@ func (p *Producer) WriteMetrics(metrics []model.Metric) error {
 
 // Close закрывает файловый дескриптор и освобождает ресурсы.
 // Возвращает ошибку, если возникла.
-func (p *Producer) Close() error {
+func (p *Writer) Close() error {
 	return p.file.Close()
 }
 
-// consumer представляет собой структуру, ответственную за чтение метрик из файла.
-type consumer struct {
+// Reader представляет собой структуру, ответственную за чтение метрик из файла.
+type Reader struct {
 	file    *os.File
 	decoder *json.Decoder
 }
 
-// NewConsumer создает новый экземпляр consumer и открывает файл для чтения.
+// NewReader создает новый экземпляр Reader и открывает файл для чтения.
 // fileName - полное имя файла, из которого будут читаться метрики.
-// Возвращает указатель на consumer и ошибку, если возникла.
-func NewConsumer(fileName string) (*consumer, error) {
+// Возвращает указатель на Reader и ошибку, если возникла.
+func NewReader(fileName string) (*Reader, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
 
-	return &consumer{
+	return &Reader{
 		file:    file,
 		decoder: json.NewDecoder(file),
 	}, nil
@@ -67,7 +67,7 @@ func NewConsumer(fileName string) (*consumer, error) {
 
 // ReadMetrics считывает метрики из файла и возвращает их в виде среза моделей Metric.
 // Возвращает срез метрик и ошибку, если возникла.
-func (c *consumer) ReadMetrics() ([]model.Metric, error) {
+func (c *Reader) ReadMetrics() ([]model.Metric, error) {
 	metrics := []model.Metric{}
 
 	if err := c.decoder.Decode(&metrics); err != nil {
@@ -80,6 +80,6 @@ func (c *consumer) ReadMetrics() ([]model.Metric, error) {
 
 // Close закрывает файл после чтения метрик.
 // Возвращает ошибку, если возникла при закрытии файла.
-func (c *consumer) Close() error {
+func (c *Reader) Close() error {
 	return c.file.Close()
 }

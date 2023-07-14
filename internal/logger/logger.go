@@ -7,9 +7,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Log будет доступен всему коду как синглтон.
-// Никакой код навыка, кроме функции InitLogger, не должен модифицировать эту переменную.
-// По умолчанию установлен no-op-логер, который не выводит никаких сообщений.
 var Log *zap.Logger = zap.NewNop()
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
@@ -60,7 +57,7 @@ func RequestLogger(h http.Handler) http.Handler {
 			zap.Int("size", rd.size),
 			zap.Any("request headers", r.Header),
 			zap.Any("request body", r.Body),
-			zap.Any("responce headers", w.Header()),
+			zap.Any("response headers", w.Header()),
 			//
 		)
 

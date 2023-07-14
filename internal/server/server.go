@@ -147,18 +147,18 @@ func (s *server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 // handleJSONPostUpdateMetric
 func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Request) {
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		logger.Log.Sugar().Info("wrong content type")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
 		logger.Log.Sugar().Errorf("cannot parse counter metric value: %s", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if r.Header.Get("Content-Type") != "application/json" {
-		logger.Log.Sugar().Info("wrong content type")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -178,7 +178,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		s.sm.AddGauge(string(m.Name), m.Value)
 		value, ok := s.sm.GetGauge(string(m.Name))
 		if !ok {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		m.Value = value
@@ -187,7 +187,7 @@ func (s *server) handleJSONPostUpdateMetric(w http.ResponseWriter, r *http.Reque
 		s.sm.AddCounter(string(m.Name), m.Delta)
 		delta, ok := s.sm.GetCounter(string(m.Name))
 		if !ok {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		m.Delta = delta

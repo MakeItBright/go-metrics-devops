@@ -32,7 +32,8 @@ func main() {
 	}
 
 	if err := logger.Initialize("info"); err != nil {
-		log.Fatalf("cannot start server: %s", err)
+		log.Fatalf("cannot start agent: %s", err)
+
 	}
 
 	if err := agent.Start(cfg); err != nil {
