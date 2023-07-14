@@ -3,7 +3,7 @@ package middleware
 import (
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,7 +24,7 @@ func TestGZipHandle(t *testing.T) {
 		}
 
 		// Читаем тело запроса
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed to read request body: %v", err)
 		}
