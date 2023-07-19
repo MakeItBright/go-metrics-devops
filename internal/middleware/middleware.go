@@ -20,6 +20,16 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 
 func GZipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Проверяем типы контента, для которых применяется сжатие
+		contentType := r.Header.Get("Content-Type")
+		fmt.Println(contentType)
+		if !strings.HasPrefix(contentType, "application/json") && !strings.HasPrefix(contentType, "text/html") {
+			// Если тип контента не соответствует, передаем управление
+			// дальше без изменений
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		// проверяем что запрос пришел сжатый
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			gz, err := gzip.NewReader(r.Body)
@@ -34,15 +44,6 @@ func GZipHandle(next http.Handler) http.Handler {
 		// проверяем, что клиент поддерживает gzip-сжатие
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			// если gzip не поддерживается, передаём управление
-			// дальше без изменений
-			next.ServeHTTP(w, r)
-			return
-		}
-		// Проверяем типы контента, для которых применяется сжатие
-		contentType := r.Header.Get("Content-Type")
-		fmt.Println(contentType)
-		if !strings.HasPrefix(contentType, "application/json") && !strings.HasPrefix(contentType, "text/html") {
-			// Если тип контента не соответствует, передаем управление
 			// дальше без изменений
 			next.ServeHTTP(w, r)
 			return
