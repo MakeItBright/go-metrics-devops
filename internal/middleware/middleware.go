@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -43,8 +42,6 @@ func GZipHandle(next http.Handler) http.Handler {
 		}
 
 		// Проверяем типы контента, для которых применяется сжатие
-		contentType := r.Header.Get("Content-Type")
-		fmt.Println(contentType)
 
 		enableCompress := strings.Contains(ContentTypesForCompress, w.Header().Get("Content-Type"))
 
