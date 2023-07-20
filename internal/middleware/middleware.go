@@ -44,14 +44,6 @@ func GZipHandle(next http.Handler) http.Handler {
 			return
 		}
 
-		// создаём gzip.Writer поверх текущего w
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer gz.Close()
-
 		// Проверяем типы контента, для которых применяется сжатие
 		contentType := w.Header().Get("Content-Type")
 		enableCompress := ContentTypesForCompress[contentType]
@@ -62,7 +54,13 @@ func GZipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-
+		// создаём gzip.Writer поверх текущего w
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer gz.Close()
 		// устанавливаем соответствующие заголовки сервера
 		w.Header().Set("Content-Encoding", "gzip")
 
