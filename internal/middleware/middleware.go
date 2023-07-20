@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var ContentTypesForCompress = "application/json; text/html"
+
 type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
@@ -43,7 +45,10 @@ func GZipHandle(next http.Handler) http.Handler {
 		// Проверяем типы контента, для которых применяется сжатие
 		contentType := r.Header.Get("Content-Type")
 		fmt.Println(contentType)
-		if !strings.HasPrefix(contentType, "application/json") || !strings.HasPrefix(contentType, "text/html") {
+
+		enableCompress := strings.Contains(ContentTypesForCompress, w.Header().Get("Content-Type"))
+
+		if !enableCompress {
 			// Если тип контента не соответствует, передаем управление
 			// дальше без изменений
 			next.ServeHTTP(w, r)
