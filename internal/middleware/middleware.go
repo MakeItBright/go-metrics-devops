@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-var ContentTypesForCompress = "application/json; text/html"
+var ContentTypesForCompress = map[string]bool{
+	"application/json": true,
+	"text/html":        true,
+}
 
 type gzipWriter struct {
 	http.ResponseWriter
@@ -41,9 +44,17 @@ func GZipHandle(next http.Handler) http.Handler {
 			return
 		}
 
-		// Проверяем типы контента, для которых применяется сжатие
+		// создаём gzip.Writer поверх текущего w
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer gz.Close()
 
-		enableCompress := strings.Contains(ContentTypesForCompress, w.Header().Get("Content-Type"))
+		// Проверяем типы контента, для которых применяется сжатие
+		contentType := w.Header().Get("Content-Type")
+		enableCompress := ContentTypesForCompress[contentType]
 
 		if !enableCompress {
 			// Если тип контента не соответствует, передаем управление
@@ -51,17 +62,9 @@ func GZipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// создаём gzip.Writer поверх текущего w
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-		defer gz.Close()
 
+		// устанавливаем соответствующие заголовки сервера
 		w.Header().Set("Content-Encoding", "gzip")
-		// w.Header().Del("Content-Length")          // Удаляем Content-Length, т.к. размер изменится при сжатии
-		// w.Header().Set("Vary", "Accept-Encoding") // Указываем, что ответ может варьироваться по Accept-Encoding
 
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
