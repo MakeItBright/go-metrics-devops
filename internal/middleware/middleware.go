@@ -18,8 +18,20 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
-	return w.Writer.Write(b)
+	if w.Header().Get("Content-Encoding") == "gzip" {
+		return w.Writer.Write(b)
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w gzipWriter) WriteHeader(code int) {
+	contentType := w.Header().Get("Content-Type")
+	enableCompress := ContentTypesForCompress[contentType]
+
+	if enableCompress {
+		w.Header().Set("Content-Encoding", "gzip")
+	}
+	w.ResponseWriter.WriteHeader(code)
 }
 
 func GZipHandle(next http.Handler) http.Handler {
@@ -45,15 +57,15 @@ func GZipHandle(next http.Handler) http.Handler {
 		}
 
 		// Проверяем типы контента, для которых применяется сжатие
-		contentType := w.Header().Get("Content-Type")
-		enableCompress := ContentTypesForCompress[contentType]
+		// contentType := w.Header().Get("Content-Type")
+		// enableCompress := ContentTypesForCompress[contentType]
 
-		if !enableCompress {
-			// Если тип контента не соответствует, передаем управление
-			// дальше без изменений
-			next.ServeHTTP(w, r)
-			return
-		}
+		// if !enableCompress {
+		// 	// Если тип контента не соответствует, передаем управление
+		// 	// дальше без изменений
+		// 	next.ServeHTTP(w, r)
+		// 	return
+		// }
 		// создаём gzip.Writer поверх текущего w
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
