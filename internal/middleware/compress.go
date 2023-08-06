@@ -4,10 +4,12 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
-	"strings"
 )
 
-var ContentTypesForCompress = "application/json; text/html"
+var ContentTypesForCompress = map[string]bool{
+	"application/json": true,
+	"text/html":        true,
+}
 
 // compressWriter реализует интерфейс http.ResponseWriter и позволяет прозрачно для сервера
 // сжимать передаваемые данные и выставлять правильные HTTP-заголовки
@@ -30,7 +32,9 @@ func (c *compressWriter) Header() http.Header {
 func (c *compressWriter) Write(p []byte) (int, error) {
 
 	// проверяем, что клиент умеет получать от сервера сжатые данные в формате gzip
-	enableCompress := strings.Contains(ContentTypesForCompress, c.w.Header().Get("Content-Type"))
+	contentType := c.w.Header().Get("Content-Type")
+	enableCompress := ContentTypesForCompress[contentType]
+
 	if enableCompress {
 		c.w.Header().Set("Content-Encoding", "gzip")
 		// не забываем отправить клиенту все сжатые данные после завершения middleware
