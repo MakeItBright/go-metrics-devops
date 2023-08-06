@@ -39,7 +39,7 @@ func TestGZipHandle(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	server := httptest.NewServer(GZipHandle(handler))
+	server := httptest.NewServer(GzipMiddleware(handler))
 	defer server.Close()
 
 	// Создаем запрос с сжатым телом

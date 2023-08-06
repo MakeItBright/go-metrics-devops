@@ -43,7 +43,7 @@ func (s *server) registerRouter() {
 
 	s.router.Use(logger.RequestLogger)
 	s.router.Use(middleware.StripSlashes)
-	s.router.Use(mw.GZipHandle)
+	s.router.Use(mw.GzipMiddleware)
 	s.router.Get("/health", s.handleHealth)
 	s.router.Get("/", s.handleGetAllMetrics)
 
