@@ -30,7 +30,9 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
+
 	if c.w.Header().Get("Content-Encoding") == "gzip" {
+		c.w.WriteHeader(200)
 		defer c.zw.Close()
 
 		return c.zw.Write(p)
