@@ -30,26 +30,23 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-
-	// проверяем, что клиент умеет получать от сервера сжатые данные в формате gzip
-	contentType := c.w.Header().Get("Content-Type")
-	enableCompress := ContentTypesForCompress[contentType]
-
-	if enableCompress {
-		c.w.Header().Set("Content-Encoding", "gzip")
-		// не забываем отправить клиенту все сжатые данные после завершения middleware
+	if c.w.Header().Get("Content-Encoding") == "gzip" {
 		defer c.zw.Close()
 
 		return c.zw.Write(p)
 	}
-
 	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
 	if statusCode < 300 {
 
-		c.w.Header().Set("Content-Encoding", "gzip")
+		contentType := c.w.Header().Get("Content-Type")
+		enableCompress := ContentTypesForCompress[contentType]
+
+		if enableCompress {
+			c.w.Header().Set("Content-Encoding", "gzip")
+		}
 	}
 	c.w.WriteHeader(statusCode)
 }
