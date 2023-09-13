@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Check branch name
         run: |
-          if [[ ! $GITHUB_HEAD_REF =~ ^iter[0-9]+$ ]]; then echo "Branch name must match pattern 'iter<number>'" && exit 1; fi
+          if [[ ! $GITHUB_HEAD_REF =~ ^iter[0-9]+$ ]] && [[ ${{ github.ref }} != "refs/heads/main" ]]; then echo "Branch name must match pattern 'iter<number>' or github.ref must be 'refs/heads/main'" && echo "Your branch is $GITHUB_HEAD_REF and github.ref is ${{ github.ref }}" && exit 1; else echo "Your branch is $GITHUB_HEAD_REF and github.ref is ${{ github.ref }}"; fi
 
   metricstest:
     runs-on: ubuntu-latest
@@ -254,13 +254,11 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration9$ \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -file-storage-path=$TEMP_FILE \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -file-storage-path=$TEMP_FILE \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #10"
         if: |
@@ -275,12 +273,11 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration10[AB]$ \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #11"
         if: |
@@ -294,12 +291,11 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration11$ \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #12"
         if: |
@@ -312,12 +308,11 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration12$ \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #13"
         if: |
@@ -329,12 +324,11 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration13$ \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #14"
         if: |
@@ -345,12 +339,12 @@ jobs:
           ADDRESS="localhost:${SERVER_PORT}"
           TEMP_FILE=$(random tempfile)
           metricstest -test.v -test.run=^TestIteration14$ \
-            -source-path=. \
-            -server-port=$SERVER_PORT \
-            -key="${TEMP_FILE}" \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent \
-            -binary-path=cmd/server/server
+            -binary-path=cmd/server/server \
+            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -key="${TEMP_FILE}" \
+            -server-port=$SERVER_PORT \
+            -source-path=.
 
       - name: "Code increment #14 (race detection)"
         if: |

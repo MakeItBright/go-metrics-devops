@@ -22,13 +22,14 @@ func NewSender(serverAddr string) *Sender {
 func (s *Sender) SendMetrics(metrics []model.Metric) error {
 	client := resty.New()
 	for _, value := range metrics {
-		url := fmt.Sprintf("%s/update/%s/%s/%s", s.url, value.Type, value.Name, value.GetValue())
+		url := fmt.Sprintf("%s/update", s.url)
+		_, err := client.R().SetHeader("Content-Type", "application/json").SetBody(value).Post(url)
 
-		_, err := client.R().SetHeader("Content-Type", "text/plain").Post(url)
 		if err != nil {
 			return fmt.Errorf("cannot perform POST request: %w", err)
 		}
 
 	}
+
 	return nil
 }
